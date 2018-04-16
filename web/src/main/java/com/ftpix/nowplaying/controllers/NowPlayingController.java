@@ -44,10 +44,11 @@ public class NowPlayingController {
     @SparkGet(value = "/get-available-plugins", transformer = GsonTransformer.class)
     public List<Map<String, Object>> getAvailablePlugins() throws IOException {
 
-        return PluginUtil.NOWPLAYING_PLUGINS
+        return PluginUtil.PLUGIN_INSTANCES
+                .values()
                 .stream()
-                .map(PluginUtil.CLASS_TO_PLUGIN)
                 .filter(p -> p != null)
+                .filter(p -> p instanceof NowPlayingPlugin)
                 .map(PluginUtil.PLUGIN_TO_ID_NAME)
                 .collect(Collectors.toList());
     }

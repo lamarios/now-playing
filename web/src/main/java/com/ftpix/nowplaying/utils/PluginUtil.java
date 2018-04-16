@@ -1,5 +1,6 @@
 package com.ftpix.nowplaying.utils;
 
+import com.ftpix.nowplaying.ExternalLoginPlugin;
 import com.ftpix.nowplaying.NowPlayingPlugin;
 import com.ftpix.nowplaying.Plugin;
 import com.ftpix.nowplaying.WebApp;
@@ -33,14 +34,6 @@ public class PluginUtil {
     private static final Logger logger = LogManager.getLogger();
 
 
-    public final static Function<Class<? extends Plugin>, Plugin> CLASS_TO_PLUGIN = c -> {
-        try {
-            return (Plugin) c.getConstructor().newInstance();
-        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-            logger.error("Couldn't create new instance of plugin [{}], ignoring it", c.getCanonicalName(), e);
-            return null;
-        }
-    };
 
 
     public final static Function<Plugin, Map<String, Object>> PLUGIN_TO_ID_NAME = p -> {
@@ -55,6 +48,10 @@ public class PluginUtil {
 
         if (p instanceof NowPlayingPlugin) {
             tags.add("Now Playing");
+        }
+
+        if (p instanceof ExternalLoginPlugin) {
+            plugin.put("loginHtml", (((ExternalLoginPlugin) p).getLoginLinkHtml()));
         }
 
         plugin.put("tags", Strings.join(tags, ','));
@@ -93,23 +90,7 @@ public class PluginUtil {
      * @return true if the plugin exists
      */
     public static boolean pluginExists(String plugin) {
-        System.out.println(plugin);
-        return ALL_PLUGINS.stream()
-                .map(c -> {
-                    try {
-                        Plugin p = c.getConstructor().newInstance();
-                        return p;
-                    } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-                        e.printStackTrace();
-                        return null;
-                    }
-                })
-                .filter(p -> p != null)
-                .peek(p -> System.out.println(p.getClass()))
-                .map(p -> p.getId())
-                .filter(plugin::equalsIgnoreCase)
-                .findFirst().isPresent();
-
+        return PLUGIN_INSTANCES.containsKey(plugin);
     }
 
 }

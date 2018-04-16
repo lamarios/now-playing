@@ -28,15 +28,19 @@ public class Config {
         Path backup = CONFIG_FOLDER.resolve(CONFIG_NAME + ".back");
         try {
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            Files.move(configFile, backup, StandardCopyOption.REPLACE_EXISTING);
+            if (Files.exists(backup)) {
+                Files.move(configFile, backup, StandardCopyOption.REPLACE_EXISTING);
+            }
 
             String jsonStr = gson.toJson(this);
             System.out.println(jsonStr);
             Files.write(configFile, jsonStr.getBytes(), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-        }catch (IOException e){
-            Files.move(backup, configFile, StandardCopyOption.REPLACE_EXISTING);
-            throw  e;
-        }finally {
+        } catch (IOException e) {
+            if (Files.exists(backup)) {
+                Files.move(backup, configFile, StandardCopyOption.REPLACE_EXISTING);
+            }
+            throw e;
+        } finally {
             Files.deleteIfExists(backup);
         }
 

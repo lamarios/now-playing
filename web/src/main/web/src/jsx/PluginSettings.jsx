@@ -12,13 +12,17 @@ export default class PluginSettings extends React.Component {
         return (<div className="PluginSettings">
             <h2>Plugin Settings</h2>
             {this.props.plugins.map((p, i) => {
-                if(p.settings != undefined && p.settings.length >0) {
+                if (p.settings != undefined && p.settings.length > 0) {
                     return (<div key={p.id}>
                         <h3>{p.name}</h3>
                         <p>Can be used as: {p.tags}</p>
                         <SinglePluginSettings settings={p.settings} plugin={p.id} values={p.settingsValues}/>
+                        {p.loginHtml !== undefined && <div className="extnal-login">
+                            <h4>External login link</h4>
+                            <div dangerouslySetInnerHTML={{__html: p.loginHtml}}></div>
+                        </div>}
                     </div>)
-                }else{
+                } else {
                     <div></div>
                 }
             })}

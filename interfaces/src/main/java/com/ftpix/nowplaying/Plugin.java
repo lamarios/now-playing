@@ -1,5 +1,6 @@
 package com.ftpix.nowplaying;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -48,4 +49,5 @@ public interface Plugin {
      */
 
     void stop();
+
 }
