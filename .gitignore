@@ -140,3 +140,5 @@ web/src/main/resources/web/public
 
 config.json
 target
+
+com.ftpix.nowplaying.plugins.Spotify

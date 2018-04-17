@@ -1,10 +1,14 @@
 package com.ftpix.nowplaying;
 
-import java.util.Arrays;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
 public interface Plugin {
+    Path CONFIG_FOLDER = Paths.get(System.getProperty("config.folder", "."));
     /**
      * Gets the name of this plugin
      *
@@ -50,4 +54,15 @@ public interface Plugin {
 
     void stop();
 
+    default Path getCacheFolder() throws IOException {
+        Path data = CONFIG_FOLDER.resolve(getId()).resolve("cache").toAbsolutePath();
+        Files.createDirectories(data);
+        return  data;
+    }
+
+    default Path getDataFolder() throws IOException {
+        Path data = CONFIG_FOLDER.resolve(getId()).resolve("data").toAbsolutePath();
+        Files.createDirectories(data);
+        return  data;
+    }
 }

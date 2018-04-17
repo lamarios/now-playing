@@ -13,7 +13,7 @@ public class Blackscreen implements NowPlayingPlugin {
     public static final String BLACK_SCREEN_PLUGIN_ID = "com.ftpix.nowplaying.plugin.blackscreen";
 
     @Override
-    public void getNowPlayingImage(Graphics2D graphics, Dimension dimension) {
+    public void getNowPlayingImage(Graphics2D graphics, Dimension dimension, double scale) {
         graphics.setPaint(Color.BLACK);
         graphics.fillRect(0, 0, dimension.width, dimension.height);
     }

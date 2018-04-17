@@ -26,6 +26,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @SparkController("/api/now-playing")
@@ -33,7 +34,7 @@ public class NowPlayingController {
     private final Logger logger = LogManager.getLogger();
 
     public final static Dimension FULL_HD = new Dimension(1920, 1080);
-    private final Map<Dimension, Pair<LocalDateTime, Path>> imageCache = new HashMap<>();
+    private final Map<Pair<Dimension, Double>, Pair<LocalDateTime, Path>> imageCache = new HashMap<>();
 
     /**
      * Gets the list of available  plugins
@@ -61,35 +62,37 @@ public class NowPlayingController {
      * @return
      */
     @SparkGet
-    public Object nowPlaying(@SparkQueryParam("width") Integer width, @SparkQueryParam("height") Integer height, Response res) throws Exception {
+    public Object nowPlaying(@SparkQueryParam("width") Integer width, @SparkQueryParam("height") Integer height, @SparkQueryParam("scale") Double scale, Response res) throws Exception {
 
         Dimension dimension = FULL_HD;
         if (width != null && height != null) {
             dimension = new Dimension(width, height);
         }
-        logger.info("Getting now playing for dimension:{}", dimension);
+
+        scale = Optional.ofNullable(scale).orElse(1D);
+        logger.info("Getting now playing for dimension:{} and scale {}", dimension, scale);
         Path toUse;
 
-
-        if (imageCache.containsKey(dimension)) {
-            Pair<LocalDateTime, Path> localDateTimePathPair = imageCache.get(dimension);
+        Pair<Dimension, Double> cacheEntry = new Pair<>(dimension, scale);
+        if (imageCache.containsKey(cacheEntry)) {
+            Pair<LocalDateTime, Path> localDateTimePathPair = imageCache.get(cacheEntry);
             long timeDiff = Math.abs(ChronoUnit.SECONDS.between(localDateTimePathPair.getKey(), LocalDateTime.now()));
             logger.info("Time diff with cache = {}", timeDiff);
             if (timeDiff <= 5) {
                 logger.info("Using cache instead");
                 toUse = localDateTimePathPair.getValue();
             } else {
-                toUse = getContent(dimension);
+                toUse = getContent(dimension, scale);
             }
 
 
         } else {
-            toUse = getContent(dimension);
+            toUse = getContent(dimension, scale);
         }
 
 
         res.raw().setContentType("application/octet-stream");
-        res.raw().setHeader("Content-Disposition", "inline; filename=now-playing-" + dimension.width + "x" + dimension.height + ".png");
+        res.raw().setHeader("Content-Disposition", "inline; filename=now-playing-" + dimension.width + "x" + dimension.height + "x"+scale+".png");
 
         InputStream in = new FileInputStream(toUse.toFile());
 
@@ -110,7 +113,7 @@ public class NowPlayingController {
     }
 
 
-    private Path getContent(Dimension dimension) throws Exception {
+    private Path getContent(Dimension dimension, double scale) throws Exception {
 
         MediaActivityPlugin mediaActivityPlugin = (MediaActivityPlugin) PluginUtil.PLUGIN_INSTANCES.get(WebApp.CONFIG.selectedActivtyPlugin);
         Activity currentActivity = mediaActivityPlugin.getCurrentActivity();
@@ -118,24 +121,29 @@ public class NowPlayingController {
         NowPlayingPlugin nowPlayingPlugin = (NowPlayingPlugin) PluginUtil.PLUGIN_INSTANCES.get(WebApp.CONFIG.activityMapping.get(currentActivity.getId()));
         logger.info("Generating new image for Activity: [{}], and plugin:[{}]", currentActivity.getName(), nowPlayingPlugin.getName());
 
+
         BufferedImage b = new BufferedImage(dimension.width, dimension.height, BufferedImage.TYPE_INT_ARGB);
 
 
-        Graphics2D g =  b.createGraphics();
-
-        nowPlayingPlugin.getNowPlayingImage(g, dimension);
-
-
+        Graphics2D g = b.createGraphics();
+        RenderingHints rh = new RenderingHints(
+                RenderingHints.KEY_TEXT_ANTIALIASING,
+                RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setRenderingHints(rh);
+        long now = System.currentTimeMillis();
+        nowPlayingPlugin.getNowPlayingImage(g, dimension, scale);
         g.dispose();
 
 
-        Path tempFile = Files.createTempFile("now-playing", dimension.width + "x" + dimension.height).toAbsolutePath();
+        logger.info("Plugin {} created image in {}ms", nowPlayingPlugin.getName(), System.currentTimeMillis() - now);
+
+        Path tempFile = Files.createTempFile("now-playing", dimension.width + "x" + dimension.height + "x" + scale + ".png").toAbsolutePath();
         Pair<LocalDateTime, Path> pair = new Pair<>(LocalDateTime.now(), tempFile);
 
         logger.info("Writing to image {}", tempFile.toAbsolutePath());
         ImageIO.write(b, "png", new FileOutputStream(tempFile.toFile()));
 
-        imageCache.put(dimension, pair);
+        imageCache.put(new Pair<>(dimension, scale), pair);
 
         return tempFile;
 
