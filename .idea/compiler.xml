@@ -10,6 +10,7 @@
         <module name="defaultactivity" />
         <module name="harmonyactivities" />
         <module name="interfaces" />
+        <module name="photo-frame" />
         <module name="spotify" />
         <module name="web" />
       </profile>

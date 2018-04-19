@@ -33,7 +33,7 @@ public class Config {
             }
 
             String jsonStr = gson.toJson(this);
-            System.out.println(jsonStr);
+            Files.deleteIfExists(configFile);
             Files.write(configFile, jsonStr.getBytes(), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
         } catch (IOException e) {
             if (Files.exists(backup)) {

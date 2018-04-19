@@ -27,6 +27,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @SparkController("/api/now-playing")
@@ -34,7 +37,12 @@ public class NowPlayingController {
     private final Logger logger = LogManager.getLogger();
 
     public final static Dimension FULL_HD = new Dimension(1920, 1080);
-    private final Map<Pair<Dimension, Double>, Pair<LocalDateTime, Path>> imageCache = new HashMap<>();
+    private final Map<Pair<Dimension, Double>, Pair<LocalDateTime, BufferedImage>> imageCache = new ConcurrentHashMap<>();
+    private ExecutorService cacheCleaner = Executors.newSingleThreadExecutor();
+
+    public NowPlayingController() {
+        clearCache();
+    }
 
     /**
      * Gets the list of available  plugins
@@ -71,11 +79,11 @@ public class NowPlayingController {
 
         scale = Optional.ofNullable(scale).orElse(1D);
         logger.info("Getting now playing for dimension:{} and scale {}", dimension, scale);
-        Path toUse;
+        BufferedImage toUse;
 
         Pair<Dimension, Double> cacheEntry = new Pair<>(dimension, scale);
         if (imageCache.containsKey(cacheEntry)) {
-            Pair<LocalDateTime, Path> localDateTimePathPair = imageCache.get(cacheEntry);
+            Pair<LocalDateTime, BufferedImage> localDateTimePathPair = imageCache.get(cacheEntry);
             long timeDiff = Math.abs(ChronoUnit.SECONDS.between(localDateTimePathPair.getKey(), LocalDateTime.now()));
             logger.info("Time diff with cache = {}", timeDiff);
             if (timeDiff <= 5) {
@@ -92,28 +100,23 @@ public class NowPlayingController {
 
 
         res.raw().setContentType("application/octet-stream");
-        res.raw().setHeader("Content-Disposition", "inline; filename=now-playing-" + dimension.width + "x" + dimension.height + "x"+scale+".png");
+        res.raw().setHeader("Content-Disposition", "inline; filename=now-playing-" + dimension.width + "x" + dimension.height + "x" + scale + ".png");
 
-        InputStream in = new FileInputStream(toUse.toFile());
 
-        try {
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = in.read(buffer)) > 0) {
-                res.raw().getOutputStream().write(buffer, 0, len);
-            }
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            ImageIO.write(toUse, "png", os);
+            res.raw().getOutputStream().write(os.toByteArray());
 
             return res.raw();
 
         } finally {
-            in.close();
         }
 
 
     }
 
 
-    private Path getContent(Dimension dimension, double scale) throws Exception {
+    private BufferedImage getContent(Dimension dimension, double scale) throws Exception {
 
         MediaActivityPlugin mediaActivityPlugin = (MediaActivityPlugin) PluginUtil.PLUGIN_INSTANCES.get(WebApp.CONFIG.selectedActivtyPlugin);
         Activity currentActivity = mediaActivityPlugin.getCurrentActivity();
@@ -122,7 +125,12 @@ public class NowPlayingController {
         logger.info("Generating new image for Activity: [{}], and plugin:[{}]", currentActivity.getName(), nowPlayingPlugin.getName());
 
 
-        BufferedImage b = new BufferedImage(dimension.width, dimension.height, BufferedImage.TYPE_INT_ARGB);
+        int scaledWidth = (int) ((double)dimension.width * scale);
+        int  scaledHeight = (int) ((double)dimension.height * scale);
+        Dimension scaledDimension = new Dimension(scaledWidth, scaledHeight);
+
+
+        BufferedImage b = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
 
 
         Graphics2D g = b.createGraphics();
@@ -131,21 +139,48 @@ public class NowPlayingController {
                 RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         g.setRenderingHints(rh);
         long now = System.currentTimeMillis();
-        nowPlayingPlugin.getNowPlayingImage(g, dimension, scale);
+        nowPlayingPlugin.getNowPlayingImage(g, scaledDimension, scale);
         g.dispose();
 
 
         logger.info("Plugin {} created image in {}ms", nowPlayingPlugin.getName(), System.currentTimeMillis() - now);
 
-        Path tempFile = Files.createTempFile("now-playing", dimension.width + "x" + dimension.height + "x" + scale + ".png").toAbsolutePath();
-        Pair<LocalDateTime, Path> pair = new Pair<>(LocalDateTime.now(), tempFile);
+        Pair<LocalDateTime, BufferedImage> pair = new Pair<>(LocalDateTime.now(), b);
 
-        logger.info("Writing to image {}", tempFile.toAbsolutePath());
-        ImageIO.write(b, "png", new FileOutputStream(tempFile.toFile()));
 
         imageCache.put(new Pair<>(dimension, scale), pair);
 
-        return tempFile;
+        return b;
+
+    }
+
+    private void clearCache() {
+        cacheCleaner.execute(() -> {
+            while (true) {
+                logger.info("Clearing image cache");
+                LocalDateTime now = LocalDateTime.now();
+
+                imageCache.keySet()
+                        .stream()
+                        .filter(k -> {
+                            long diff = Math.abs(ChronoUnit.SECONDS.between(now, imageCache.get(k).getKey()));
+                            return diff > 30;
+                        })
+                        .forEach(k -> {
+                            logger.info("Removing from cache {}", k);
+                            imageCache.remove(k);
+                        });
+
+
+                logger.info("new cache size:{}", imageCache.size());
+
+                try {
+                    Thread.sleep(30000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
     }
 }

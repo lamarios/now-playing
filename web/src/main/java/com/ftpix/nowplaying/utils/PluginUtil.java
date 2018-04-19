@@ -8,6 +8,7 @@ import com.ftpix.nowplaying.activities.MediaActivityPlugin;
 import com.ftpix.nowplaying.harmony.HarmonyPlugin;
 import com.ftpix.nowplaying.models.Config;
 import com.ftpix.nowplaying.plugins.Blackscreen;
+import com.ftpix.nowplaying.plugins.PhotoFrame;
 import com.ftpix.nowplaying.plugins.Spotify;
 import com.ftpix.nowplaying.plugins.defaultactivity.DefaultActivity;
 import org.apache.logging.log4j.LogManager;
@@ -28,12 +29,10 @@ import static com.ftpix.nowplaying.WebApp.*;
 public class PluginUtil {
 
     public final static List<Class<? extends MediaActivityPlugin>> ACTIVITY_PLUGINS = List.of(HarmonyPlugin.class, DefaultActivity.class, Spotify.class);
-    public final static List<Class<? extends NowPlayingPlugin>> NOWPLAYING_PLUGINS = List.of(Blackscreen.class, Spotify.class);
+    public final static List<Class<? extends NowPlayingPlugin>> NOWPLAYING_PLUGINS = List.of(Blackscreen.class, Spotify.class, PhotoFrame.class);
     public final static List<Class<? extends Plugin>> ALL_PLUGINS = Stream.concat(ACTIVITY_PLUGINS.stream(), NOWPLAYING_PLUGINS.stream()).distinct().collect(Collectors.toList());
     public final static Map<String, ? extends Plugin> PLUGIN_INSTANCES;
     private static final Logger logger = LogManager.getLogger();
-
-
 
 
     public final static Function<Plugin, Map<String, Object>> PLUGIN_TO_ID_NAME = p -> {

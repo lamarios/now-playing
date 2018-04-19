@@ -8,10 +8,12 @@ import com.ftpix.nowplaying.plugins.models.Image;
 import com.ftpix.nowplaying.plugins.models.SpotifyNowPlaying;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.jhlabs.image.BoxBlurFilter;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.mashape.unirest.request.body.MultipartBody;
+import javafx.util.Pair;
 import net.coobird.thumbnailator.Thumbnails;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpHeaders;
@@ -45,6 +47,8 @@ public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalL
     private static final String SETTINGS_CLIENT_ID = "clientId";
     private String clientSecret;
     private String clientID;
+    private String currentlyPlaying;
+    private BufferedImage art, blurredArt;
 
 
     private final Gson gson = new GsonBuilder().create();
@@ -55,7 +59,10 @@ public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalL
         Dimension onePercent = new Dimension(dimension.width / 100, dimension.height / 100);
 
         SpotifyNowPlaying nowPlaying = getNowPlaying();
-        BufferedImage albumArt = getNowPlayingImage(nowPlaying);
+        Pair<BufferedImage, BufferedImage> nowPlayingImage = getNowPlayingImage(nowPlaying);
+        BufferedImage albumArt = nowPlayingImage.getKey();
+        BufferedImage background = nowPlayingImage.getValue();
+
 
         //black background
         graphics.setColor(Color.black);
@@ -63,7 +70,7 @@ public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalL
 
         //building the background image
         int maxSize = Math.max(dimension.width, dimension.height);
-        BufferedImage background = Thumbnails.of(albumArt)..size(maxSize, maxSize).asBufferedImage();
+        background = Thumbnails.of(background).size(maxSize, maxSize).asBufferedImage();
         graphics.drawImage(background, null, dimension.width / 2 - background.getWidth() / 2, dimension.height / 2 - background.getHeight() / 2);
 
         //semi transparent layer
@@ -85,22 +92,23 @@ public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalL
         graphics.setColor(Color.WHITE);
 
         //drawing song name
-        Rectangle2D nameBounds = graphics.getFont().getStringBounds(nowPlaying.item.name, graphics.getFontRenderContext());
-        int textCurrentY = imageY + (int) nameBounds.getHeight();
+        int lineHeight = (int) graphics.getFont().getStringBounds(nowPlaying.item.name, graphics.getFontRenderContext()).getHeight();
+        int textCurrentY = imageY + lineHeight;
         int textCurrentX = imageX + albumArt.getWidth() + onePercent.width * 2;
 
-        graphics.drawString(nowPlaying.item.name, textCurrentX, textCurrentY);
+
+        int textMaxWidth = dimension.width -  textCurrentX - onePercent.width * 5;
+        drawString(nowPlaying.item.name, fontSize, textMaxWidth, graphics, textCurrentX, textCurrentY);
+
 
         //drawing album
-        nameBounds = graphics.getFont().getStringBounds(nowPlaying.item.album.name, graphics.getFontRenderContext());
-        textCurrentY += nameBounds.getHeight() + onePercent.height * percentHeightSpacing;
-        graphics.drawString(nowPlaying.item.album.name, textCurrentX, textCurrentY);
+        textCurrentY += lineHeight + onePercent.height * percentHeightSpacing;
+        drawString(nowPlaying.item.album.name, fontSize, textMaxWidth, graphics, textCurrentX, textCurrentY);
 
         //drawing  artists
         String artists = nowPlaying.item.artists.stream().map(s -> s.name).collect(Collectors.joining(", "));
-        nameBounds = graphics.getFont().getStringBounds(artists, graphics.getFontRenderContext());
-        textCurrentY += nameBounds.getHeight() + onePercent.height * percentHeightSpacing;
-        graphics.drawString(artists, textCurrentX, textCurrentY);
+        textCurrentY += lineHeight + onePercent.height * percentHeightSpacing;
+        drawString(artists, fontSize, textMaxWidth, graphics, textCurrentX, textCurrentY);
 
         textCurrentY += onePercent.height * percentHeightSpacing;
         //progress bar
@@ -114,13 +122,45 @@ public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalL
 
     }
 
+    /**
+     * Try to fit string in given width
+     *
+     * @param text
+     * @param wantedFontSize
+     * @param maxLength
+     * @param graphics
+     * @param x
+     * @param y
+     * @return
+     */
+    private void drawString(String text, int wantedFontSize, int maxLength, Graphics2D graphics, int x, int y) {
+        Font font;
+        int textWidth = 0;
+        do {
+            wantedFontSize--;
+            font = new Font(Font.SANS_SERIF, Font.PLAIN, wantedFontSize);
+            textWidth = (int) font.getStringBounds(text, graphics.getFontRenderContext()).getWidth();
+        } while (textWidth > maxLength);
 
-    private BufferedImage getNowPlayingImage(SpotifyNowPlaying nowPlaying) throws IOException {
-        Path image = getCacheFolder().resolve(nowPlaying.item.id);
-        if (Files.exists(image)) {
+        graphics.setFont(font);
+        graphics.drawString(text, x, y);
+
+
+    }
+
+    /**
+     * Gets the currently playing image
+     * @param nowPlaying
+     * @return
+     * @throws IOException
+     */
+    private Pair<BufferedImage, BufferedImage> getNowPlayingImage(SpotifyNowPlaying nowPlaying) throws IOException {
+        if (art != null
+                && blurredArt != null
+                && (currentlyPlaying != null && nowPlaying.item.id.equalsIgnoreCase(currentlyPlaying))) {
             //loading from file
             logger.info("Loading album art from cache");
-            return ImageIO.read(image.toFile());
+            return new Pair<>(art, blurredArt);
         } else {
             //we need to download it
             logger.info("Downloading album art");
@@ -139,10 +179,14 @@ public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalL
                     .filter(i -> i != null)
                     .orElseThrow(() -> new IOException("This song doesn't have image"));
 
-            ImageIO.write(art, "png", image.toFile());
+            BufferedImage blurred = new BoxBlurFilter(100, 100, 1).filter(art, null);
+
+            this.currentlyPlaying = nowPlaying.item.id;
+            this.art = art;
+            this.blurredArt = blurred;
 
 
-            return art;
+            return new Pair<>(art, blurred);
 
         }
 

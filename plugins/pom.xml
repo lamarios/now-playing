@@ -16,6 +16,7 @@
         <module>blackscreen</module>
         <module>default-activity</module>
         <module>spotify</module>
+        <module>photo-frame</module>
     </modules>
     <groupId>com.ftpix.nowplaying</groupId>
     <artifactId>plugins</artifactId>
