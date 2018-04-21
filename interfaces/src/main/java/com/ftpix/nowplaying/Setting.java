@@ -1,6 +1,5 @@
 package com.ftpix.nowplaying;
 
-import javafx.util.Pair;
 
 import java.util.List;
 

@@ -64,13 +64,19 @@ public class Plex implements NowPlayingPlugin {
             int fontSize = onePercent.height * 8;
 
             if (art != null) {
-                Thumbnails.Builder<BufferedImage> thumb = Thumbnails.of(new BoxBlurFilter(100, 100, 1).filter(art, null));
+                Thumbnails.Builder<BufferedImage> thumb = Thumbnails.of(art);
+                double artRatio = (double) art.getWidth() / (double) art.getHeight();
+                double screenRatio = (double) dimension.width / (double) dimension.height;
+                if (artRatio > screenRatio) {
+                    thumb = thumb.height(dimension.height);
+                } else {
+                    thumb = thumb.width(dimension.width);
+                }
 
-
-                BufferedImage background = thumb.forceSize(dimension.width, dimension.height).asBufferedImage();
+                BufferedImage background = thumb.asBufferedImage();
                 graphics.drawImage(background, null, dimension.width / 2 - background.getWidth() / 2, dimension.height / 2 - background.getHeight() / 2);
 
-                graphics.setColor(new Color(0, 0, 0, 0.5F));
+                graphics.setColor(new Color(0, 0, 0, 0.7F));
                 graphics.fillRect(0, 0, dimension.width, dimension.height);
 
             }
@@ -118,7 +124,7 @@ public class Plex implements NowPlayingPlugin {
             //now displaying texts
             int fullHeight = texts.size() * lineHeight + texts.size() * percentHeightSpacing;
             System.out.println(fullHeight);
-            int startFrom = dimension.height / 2 - fullHeight / 2 + lineHeight ;
+            int startFrom = dimension.height / 2 - fullHeight / 2 + lineHeight;
             currentY = startFrom;
 
             for (String t : texts) {
@@ -177,7 +183,7 @@ public class Plex implements NowPlayingPlugin {
                                     )
                     );
 
-            String artUrl = String.format(PLEX_ART_URL, url.substring(0, url.length() - 1), art, token);
+            String artUrl = art.trim().length() > 0?String.format(PLEX_ART_URL, url.substring(0, url.length() - 1), art, token):null;
 
             String thumbUrl = null;
             if (video.type.equalsIgnoreCase("episode")) {
@@ -193,7 +199,7 @@ public class Plex implements NowPlayingPlugin {
                                         )
                         );
 
-                thumbUrl = String.format(PLEX_ART_URL, url.substring(0, url.length() - 1), thumb, token);
+                thumbUrl = thumb.trim().length() > 0 ?String.format(PLEX_ART_URL, url.substring(0, url.length() - 1), thumb, token):null;
 
             } else {
                 String thumb = Optional.ofNullable(video.thumb)
@@ -208,8 +214,9 @@ public class Plex implements NowPlayingPlugin {
                                         )
                         );
 
-                thumbUrl = String.format(PLEX_ART_URL, url.substring(0, url.length() - 1), thumb, token);
+                thumbUrl = thumb.trim().length() > 0?String.format(PLEX_ART_URL, url.substring(0, url.length() - 1), thumb, token):null;
             }
+
 
             this.art = ImageIO.read(new URL(artUrl));
             this.thumb = ImageIO.read(new URL(thumbUrl));

@@ -1,6 +1,11 @@
+com/ftpix/nowplaying/NowPlayingPlugin.class
+com/ftpix/nowplaying/ExternalEndPointDefinition$Method.class
+com/ftpix/nowplaying/SettingType.class
+com/ftpix/nowplaying/Utils.class
+com/ftpix/nowplaying/Plugin.class
 com/ftpix/nowplaying/activities/Activity.class
 com/ftpix/nowplaying/activities/MediaActivityPlugin.class
-com/ftpix/nowplaying/NowPlayingPlugin.class
-com/ftpix/nowplaying/SettingType.class
+com/ftpix/nowplaying/ExternalLoginPlugin.class
+com/ftpix/nowplaying/Pair.class
+com/ftpix/nowplaying/ExternalEndPointDefinition.class
 com/ftpix/nowplaying/Setting.class
-com/ftpix/nowplaying/Plugin.class

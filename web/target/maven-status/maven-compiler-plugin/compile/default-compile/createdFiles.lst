@@ -1,3 +1,9 @@
-com/ftpix/nowplaying/controllers/ActivitiesController.class
 com/ftpix/nowplaying/WebApp.class
+com/ftpix/nowplaying/controllers/SettingsController.class
+com/ftpix/nowplaying/models/Config.class
+com/ftpix/nowplaying/utils/PluginUtil.class
 com/ftpix/nowplaying/transformers/GsonTransformer.class
+com/ftpix/nowplaying/controllers/ActivitiesController.class
+com/ftpix/nowplaying/controllers/NowPlayingController.class
+com/ftpix/nowplaying/controllers/IndexController.class
+com/ftpix/nowplaying/WebApp$1.class

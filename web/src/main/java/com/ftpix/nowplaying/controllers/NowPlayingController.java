@@ -2,6 +2,7 @@ package com.ftpix.nowplaying.controllers;
 
 
 import com.ftpix.nowplaying.NowPlayingPlugin;
+import com.ftpix.nowplaying.Pair;
 import com.ftpix.nowplaying.WebApp;
 import com.ftpix.nowplaying.activities.Activity;
 import com.ftpix.nowplaying.activities.MediaActivityPlugin;
@@ -10,7 +11,7 @@ import com.ftpix.nowplaying.utils.PluginUtil;
 import com.ftpix.sparknnotation.annotations.SparkController;
 import com.ftpix.sparknnotation.annotations.SparkGet;
 import com.ftpix.sparknnotation.annotations.SparkQueryParam;
-import javafx.util.Pair;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import spark.Response;

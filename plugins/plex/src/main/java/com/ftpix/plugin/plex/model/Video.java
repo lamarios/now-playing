@@ -76,6 +76,7 @@ public class Video {
 
         try {
             video.summary = json.getString("summary");
+
         } catch (JSONException e) {
         }
 

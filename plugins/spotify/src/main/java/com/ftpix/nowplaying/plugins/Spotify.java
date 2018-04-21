@@ -13,7 +13,7 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.mashape.unirest.request.body.MultipartBody;
-import javafx.util.Pair;
+
 import net.coobird.thumbnailator.Thumbnails;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpHeaders;
@@ -63,7 +63,6 @@ public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalL
             Pair<BufferedImage, BufferedImage> nowPlayingImage = getNowPlayingImage(nowPlaying);
             BufferedImage albumArt = nowPlayingImage.getKey();
             BufferedImage background = nowPlayingImage.getValue();
-
 
             //black background
             graphics.setColor(Color.black);

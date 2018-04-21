@@ -1,3 +1,8 @@
 /home/gz/IdeaProjects/now-playing/web/src/main/java/com/ftpix/nowplaying/controllers/ActivitiesController.java
+/home/gz/IdeaProjects/now-playing/web/src/main/java/com/ftpix/nowplaying/models/Config.java
+/home/gz/IdeaProjects/now-playing/web/src/main/java/com/ftpix/nowplaying/controllers/IndexController.java
+/home/gz/IdeaProjects/now-playing/web/src/main/java/com/ftpix/nowplaying/controllers/SettingsController.java
 /home/gz/IdeaProjects/now-playing/web/src/main/java/com/ftpix/nowplaying/WebApp.java
+/home/gz/IdeaProjects/now-playing/web/src/main/java/com/ftpix/nowplaying/controllers/NowPlayingController.java
 /home/gz/IdeaProjects/now-playing/web/src/main/java/com/ftpix/nowplaying/transformers/GsonTransformer.java
+/home/gz/IdeaProjects/now-playing/web/src/main/java/com/ftpix/nowplaying/utils/PluginUtil.java

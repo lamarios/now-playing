@@ -12,6 +12,12 @@
     <groupId>com.ftpix.nowplaying</groupId>
     <artifactId>web</artifactId>
 
+    <properties>
+        <docker.image.name>gonzague/now-playing</docker.image.name>
+        <docker.skip>true</docker.skip>
+    </properties>
+
+
     <repositories>
         <repository>
             <id>sparknotation</id>
@@ -92,6 +98,191 @@
                     <target>${maven.compiler.target}</target>
                 </configuration>
             </plugin>
+
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.1.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Assembly -->
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.3</version>
+                <executions>
+                    <!-- Run shade goal on package phase -->
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <!-- add Main-Class to manifest file -->
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.ftpix.nowplaying.WebApp</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <configuration>
+                    <workingDirectory>${basedir}/src/main/web</workingDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>npm install (initialize)</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <executable>npm</executable>
+                            <arguments>
+                                <argument>install</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm run build (compile)</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>compile</phase>
+                        <configuration>
+                            <executable>npm</executable>
+                            <arguments>
+                                <argument>run</argument>
+                                <argument>build</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <!-- BUILD DOCKER IMAGE -->
+                    <execution>
+                        <id>Docker build</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>install</phase>
+                        <configuration>
+                            <skip>${docker.skip}</skip>
+                            <workingDirectory>${basedir}/target/docker</workingDirectory>
+                            <executable>docker</executable>
+                            <arguments>
+                                <argument>build</argument>
+                                <argument>-t</argument>
+                                <argument>${docker.image.name}</argument>
+                                <argument>.</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--DOCKER -->
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.0.2</version>
+                <executions>
+                    <execution>
+
+                        <id>copy-resources</id>
+                        <!-- here the phase you need -->
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${basedir}/target/docker</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>docker</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                                <resource>
+                                    <directory>${basedir}/target</directory>
+                                    <includes>
+                                        <include>${project.artifactId}-${project.version}.jar</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <configuration>
+                    <workingDirectory>${basedir}/src/main/web</workingDirectory>
+                </configuration>
+                <executions>
+                    <!-- BUILD DOCKER IMAGE -->
+                    <execution>
+                        <id>Docker build</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>install</phase>
+                        <configuration>
+                            <skip>${docker.skip}</skip>
+                            <workingDirectory>${basedir}/target/docker</workingDirectory>
+                            <executable>docker</executable>
+                            <arguments>
+                                <argument>build</argument>
+                                <argument>-t</argument>
+                                <argument>${docker.image.name}</argument>
+                                <argument>.</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>Docker push</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>install</phase>
+                        <configuration>
+                            <skip>${docker.skip}</skip>
+                            <workingDirectory>${basedir}/target/docker</workingDirectory>
+                            <executable>docker</executable>
+                            <arguments>
+                                <argument>push</argument>
+                                <argument>${docker.image.name}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 </project>
