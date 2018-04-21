@@ -32,7 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-@SparkController("/api/now-playing")
+@SparkController()
 public class NowPlayingController {
     private final Logger logger = LogManager.getLogger();
 
@@ -50,7 +50,7 @@ public class NowPlayingController {
      * @return
      * @throws IOException
      */
-    @SparkGet(value = "/get-available-plugins", transformer = GsonTransformer.class)
+    @SparkGet(value = "/api/now-playing/get-available-plugins", transformer = GsonTransformer.class)
     public List<Map<String, Object>> getAvailablePlugins() throws IOException {
 
         return PluginUtil.PLUGIN_INSTANCES
@@ -69,7 +69,7 @@ public class NowPlayingController {
      * @param res
      * @return
      */
-    @SparkGet
+    @SparkGet("/now-playing.png")
     public Object nowPlaying(@SparkQueryParam("width") Integer width, @SparkQueryParam("height") Integer height, @SparkQueryParam("scale") Double scale, Response res) throws Exception {
 
         Dimension dimension = FULL_HD;

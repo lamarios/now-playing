@@ -11,6 +11,7 @@
         <module name="harmonyactivities" />
         <module name="interfaces" />
         <module name="photo-frame" />
+        <module name="plex" />
         <module name="spotify" />
         <module name="web" />
       </profile>

@@ -6,6 +6,7 @@ import com.ftpix.nowplaying.models.Config;
 import com.ftpix.nowplaying.transformers.GsonTransformer;
 import com.ftpix.nowplaying.utils.PluginUtil;
 import com.ftpix.sparknnotation.annotations.SparkController;
+import com.ftpix.sparknnotation.annotations.SparkGet;
 import com.ftpix.sparknnotation.annotations.SparkPost;
 import com.ftpix.sparknnotation.annotations.SparkQueryParam;
 import spark.Request;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 @SparkController("/api/settings")
 public class SettingsController {

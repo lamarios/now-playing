@@ -17,6 +17,7 @@
         <module>default-activity</module>
         <module>spotify</module>
         <module>photo-frame</module>
+        <module>plex</module>
     </modules>
     <groupId>com.ftpix.nowplaying</groupId>
     <artifactId>plugins</artifactId>

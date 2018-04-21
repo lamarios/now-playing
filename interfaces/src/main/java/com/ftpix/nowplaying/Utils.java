@@ -1,4 +1,4 @@
-package com.ftpix.nowplaying.plugins;
+package com.ftpix.nowplaying;
 
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;

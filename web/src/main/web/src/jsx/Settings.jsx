@@ -4,7 +4,7 @@ import ActivityList from './ActivityList.jsx';
 import NowPlayingService from './NowPlayingService.jsx'
 import PluginSettings from './PluginSettings.jsx';
 
-export default class NowPlaying extends React.Component {
+export default class Settings extends React.Component {
     constructor() {
         super();
 

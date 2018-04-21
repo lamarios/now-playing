@@ -21,6 +21,7 @@ var constants = {
     },
     NOW_PLAYING:{
         GET_AVAILABLE_PLUGINS: JSON.stringify(API_URL + "/now-playing/get-available-plugins"),
+        GET_IMAGE: JSON.stringify("/now-playing.png?width={0}&height={1}&scale={2}")
     },
     SETTINGS:{
         SAVE: JSON.stringify(API_URL + "/settings/save"),

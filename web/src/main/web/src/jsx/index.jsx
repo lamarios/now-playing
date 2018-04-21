@@ -1,7 +1,8 @@
 import React from 'react';
 import {render} from 'react-dom';
 import {BrowserRouter, Route} from 'react-router-dom';
-import NowPlaying from './nowplaying.jsx';
+import Settings from './Settings.jsx';
+import NowPlaying from './NowPlaying.jsx';
 
 
 let images = require.context("../images/", true, /^\.\/.*\.(png|gif|svg)/);
@@ -20,7 +21,8 @@ String.prototype.format = function () {
 render((
     <BrowserRouter>
         <div>
-            <Route exact path="/" component={NowPlaying} />
+            <Route exact path="/" component={Settings}/>
+            <Route exact path="/now-playing" component={NowPlaying}/>
         </div>
     </BrowserRouter>
 ), document.getElementById('content'));

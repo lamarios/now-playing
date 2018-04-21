@@ -53,6 +53,11 @@
         </dependency>
         <dependency>
             <groupId>com.ftpix.nowplaying</groupId>
+            <artifactId>plex</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.ftpix.nowplaying</groupId>
             <artifactId>harmony-activities</artifactId>
             <version>${project.version}</version>
         </dependency>

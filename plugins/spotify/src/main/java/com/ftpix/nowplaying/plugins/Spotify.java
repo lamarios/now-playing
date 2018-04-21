@@ -25,7 +25,6 @@ import spark.Spark;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
@@ -59,66 +58,72 @@ public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalL
         Dimension onePercent = new Dimension(dimension.width / 100, dimension.height / 100);
 
         SpotifyNowPlaying nowPlaying = getNowPlaying();
-        Pair<BufferedImage, BufferedImage> nowPlayingImage = getNowPlayingImage(nowPlaying);
-        BufferedImage albumArt = nowPlayingImage.getKey();
-        BufferedImage background = nowPlayingImage.getValue();
+
+        if (nowPlaying != null && nowPlaying.is_playing) {
+            Pair<BufferedImage, BufferedImage> nowPlayingImage = getNowPlayingImage(nowPlaying);
+            BufferedImage albumArt = nowPlayingImage.getKey();
+            BufferedImage background = nowPlayingImage.getValue();
 
 
-        //black background
-        graphics.setColor(Color.black);
-        graphics.fillRect(0, 0, dimension.width, dimension.height);
+            //black background
+            graphics.setColor(Color.black);
+            graphics.fillRect(0, 0, dimension.width, dimension.height);
 
-        //building the background image
-        int maxSize = Math.max(dimension.width, dimension.height);
-        background = Thumbnails.of(background).size(maxSize, maxSize).asBufferedImage();
-        graphics.drawImage(background, null, dimension.width / 2 - background.getWidth() / 2, dimension.height / 2 - background.getHeight() / 2);
+            //building the background image
+            int maxSize = Math.max(dimension.width, dimension.height);
+            background = Thumbnails.of(background).size(maxSize, maxSize).asBufferedImage();
+            graphics.drawImage(background, null, dimension.width / 2 - background.getWidth() / 2, dimension.height / 2 - background.getHeight() / 2);
 
-        //semi transparent layer
-        graphics.setColor(new Color(0, 0, 0, 0.7F));
-        graphics.fillRect(0, 0, dimension.width, dimension.height);
-
-
-        //drawing art
-        albumArt = Utils.makeRoundedCorner(Thumbnails.of(albumArt).size(dimension.height / 2, dimension.height / 2).asBufferedImage(), 20);
-
-        int imageX = onePercent.width * 5;
-        int imageY = dimension.height / 2 - albumArt.getHeight() / 2;
-        int percentHeightSpacing = 7;
-        graphics.drawImage(albumArt, null, imageX, imageY);
-
-        //drawing names
-        int fontSize = onePercent.height * 8;
-        graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, fontSize));
-        graphics.setColor(Color.WHITE);
-
-        //drawing song name
-        int lineHeight = (int) graphics.getFont().getStringBounds(nowPlaying.item.name, graphics.getFontRenderContext()).getHeight();
-        int textCurrentY = imageY + lineHeight;
-        int textCurrentX = imageX + albumArt.getWidth() + onePercent.width * 2;
+            //semi transparent layer
+            graphics.setColor(new Color(0, 0, 0, 0.5F));
+            graphics.fillRect(0, 0, dimension.width, dimension.height);
 
 
-        int textMaxWidth = dimension.width -  textCurrentX - onePercent.width * 5;
-        drawString(nowPlaying.item.name, fontSize, textMaxWidth, graphics, textCurrentX, textCurrentY);
+            //drawing art
+            albumArt = Utils.makeRoundedCorner(Thumbnails.of(albumArt).size(dimension.height / 2, dimension.height / 2).asBufferedImage(), 20);
+
+            int imageX = onePercent.width * 5;
+            int imageY = dimension.height / 2 - albumArt.getHeight() / 2;
+            int percentHeightSpacing = 7;
+            graphics.drawImage(albumArt, null, imageX, imageY);
+
+            //drawing names
+            int fontSize = onePercent.height * 8;
+            graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, fontSize));
+            graphics.setColor(Color.WHITE);
+
+            //drawing song name
+            int lineHeight = (int) graphics.getFont().getStringBounds(nowPlaying.item.name, graphics.getFontRenderContext()).getHeight();
+            int textCurrentY = imageY + lineHeight;
+            int textCurrentX = imageX + albumArt.getWidth() + onePercent.width * 2;
 
 
-        //drawing album
-        textCurrentY += lineHeight + onePercent.height * percentHeightSpacing;
-        drawString(nowPlaying.item.album.name, fontSize, textMaxWidth, graphics, textCurrentX, textCurrentY);
+            int textMaxWidth = dimension.width - textCurrentX - onePercent.width * 5;
+            drawString(nowPlaying.item.name, fontSize, textMaxWidth, graphics, textCurrentX, textCurrentY);
 
-        //drawing  artists
-        String artists = nowPlaying.item.artists.stream().map(s -> s.name).collect(Collectors.joining(", "));
-        textCurrentY += lineHeight + onePercent.height * percentHeightSpacing;
-        drawString(artists, fontSize, textMaxWidth, graphics, textCurrentX, textCurrentY);
 
-        textCurrentY += onePercent.height * percentHeightSpacing;
-        //progress bar
-        int barLength = dimension.width - textCurrentX - onePercent.width * 5;
-        int barHeight = onePercent.height * 2;
-        graphics.setColor(Color.DARK_GRAY);
-        graphics.fillRect(textCurrentX, textCurrentY, barLength, barHeight);
-        double progress = (double) barLength * (((double) nowPlaying.progress_ms / (double) nowPlaying.item.duration_ms));
-        graphics.setColor(Color.WHITE);
-        graphics.fillRect(textCurrentX, textCurrentY, (int) progress, barHeight);
+            //drawing album
+            textCurrentY += lineHeight + onePercent.height * percentHeightSpacing;
+            drawString(nowPlaying.item.album.name, fontSize, textMaxWidth, graphics, textCurrentX, textCurrentY);
+
+            //drawing  artists
+            String artists = nowPlaying.item.artists.stream().map(s -> s.name).collect(Collectors.joining(", "));
+            textCurrentY += lineHeight + onePercent.height * percentHeightSpacing;
+            drawString(artists, fontSize, textMaxWidth, graphics, textCurrentX, textCurrentY);
+
+            textCurrentY += onePercent.height * percentHeightSpacing;
+            //progress bar
+            int barLength = dimension.width - textCurrentX - onePercent.width * 5;
+            int barHeight = onePercent.height * 2;
+            graphics.setColor(Color.DARK_GRAY);
+            graphics.fillRect(textCurrentX, textCurrentY, barLength, barHeight);
+            double progress = (double) barLength * (((double) nowPlaying.progress_ms / (double) nowPlaying.item.duration_ms));
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(textCurrentX, textCurrentY, (int) progress, barHeight);
+        } else {
+            graphics.setColor(Color.BLACK);
+            graphics.fillRect(0, 0, dimension.width, dimension.height);
+        }
 
     }
 
@@ -150,6 +155,7 @@ public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalL
 
     /**
      * Gets the currently playing image
+     *
      * @param nowPlaying
      * @return
      * @throws IOException

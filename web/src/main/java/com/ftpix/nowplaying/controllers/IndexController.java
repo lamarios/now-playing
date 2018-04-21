@@ -29,4 +29,11 @@ public class IndexController {
             return reader.lines().collect(Collectors.joining(""));
         }
     }
+
+
+
+    @SparkGet("/now-playing")
+    public String nowPlayingPage() throws IOException {
+        return serveIndex();
+    }
 }
