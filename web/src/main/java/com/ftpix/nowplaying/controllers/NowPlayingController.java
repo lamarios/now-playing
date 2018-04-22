@@ -38,7 +38,7 @@ public class NowPlayingController {
     private final Logger logger = LogManager.getLogger();
 
     public final static Dimension FULL_HD = new Dimension(1920, 1080);
-    private final Map<Pair<Dimension, Double>, Pair<LocalDateTime, BufferedImage>> imageCache = new ConcurrentHashMap<>();
+    private final Map<Pair<Dimension, Double>, Pair<LocalDateTime, byte[]>> imageCache = new ConcurrentHashMap<>();
     private ExecutorService cacheCleaner = Executors.newSingleThreadExecutor();
 
     public NowPlayingController() {
@@ -84,12 +84,15 @@ public class NowPlayingController {
 
         Pair<Dimension, Double> cacheEntry = new Pair<>(dimension, scale);
         if (imageCache.containsKey(cacheEntry)) {
-            Pair<LocalDateTime, BufferedImage> localDateTimePathPair = imageCache.get(cacheEntry);
+            Pair<LocalDateTime,byte[]> localDateTimePathPair = imageCache.get(cacheEntry);
             long timeDiff = Math.abs(ChronoUnit.SECONDS.between(localDateTimePathPair.getKey(), LocalDateTime.now()));
             logger.info("Time diff with cache = {}", timeDiff);
             if (timeDiff <= 5) {
                 logger.info("Using cache instead");
-                toUse = localDateTimePathPair.getValue();
+                byte[] bytes  = localDateTimePathPair.getValue();
+                res.raw().getOutputStream().write(bytes);
+
+                return res.raw();
             } else {
                 toUse = getContent(dimension, scale);
             }
@@ -106,8 +109,11 @@ public class NowPlayingController {
 
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             ImageIO.write(toUse, "png", os);
-            res.raw().getOutputStream().write(os.toByteArray());
 
+            Pair<LocalDateTime, byte[]> pair = new Pair<>(LocalDateTime.now(), os.toByteArray());
+            imageCache.put(new Pair<>(dimension, scale), pair);
+
+            res.raw().getOutputStream().write(pair.getValue());
             return res.raw();
 
         } finally {
@@ -119,37 +125,43 @@ public class NowPlayingController {
 
     private BufferedImage getContent(Dimension dimension, double scale) throws Exception {
 
-        MediaActivityPlugin mediaActivityPlugin = (MediaActivityPlugin) PluginUtil.PLUGIN_INSTANCES.get(WebApp.CONFIG.selectedActivtyPlugin);
-        Activity currentActivity = mediaActivityPlugin.getCurrentActivity();
 
-        NowPlayingPlugin nowPlayingPlugin = (NowPlayingPlugin) PluginUtil.PLUGIN_INSTANCES.get(WebApp.CONFIG.activityMapping.get(currentActivity.getId()));
-        logger.info("Generating new image for Activity: [{}], and plugin:[{}]", currentActivity.getName(), nowPlayingPlugin.getName());
-
-
-        int scaledWidth = (int) ((double)dimension.width * scale);
-        int  scaledHeight = (int) ((double)dimension.height * scale);
+        int scaledWidth = (int) ((double) dimension.width * scale);
+        int scaledHeight = (int) ((double) dimension.height * scale);
         Dimension scaledDimension = new Dimension(scaledWidth, scaledHeight);
 
 
         BufferedImage b = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
-
-
         Graphics2D g = b.createGraphics();
         RenderingHints rh = new RenderingHints(
                 RenderingHints.KEY_TEXT_ANTIALIASING,
                 RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         g.setRenderingHints(rh);
-        long now = System.currentTimeMillis();
-        nowPlayingPlugin.getNowPlayingImage(g, scaledDimension, scale);
-        g.dispose();
+
+        try {
+            MediaActivityPlugin mediaActivityPlugin = (MediaActivityPlugin) PluginUtil.PLUGIN_INSTANCES.get(WebApp.CONFIG.selectedActivtyPlugin);
+            Activity currentActivity = mediaActivityPlugin.getCurrentActivity();
+
+            NowPlayingPlugin nowPlayingPlugin = (NowPlayingPlugin) PluginUtil.PLUGIN_INSTANCES.get(WebApp.CONFIG.activityMapping.get(currentActivity.getId()));
+            logger.info("Generating new image for Activity: [{}], and plugin:[{}]", currentActivity.getName(), nowPlayingPlugin.getName());
+
+            long now = System.currentTimeMillis();
+            nowPlayingPlugin.getNowPlayingImage(g, scaledDimension, scale);
 
 
-        logger.info("Plugin {} created image in {}ms", nowPlayingPlugin.getName(), System.currentTimeMillis() - now);
-
-        Pair<LocalDateTime, BufferedImage> pair = new Pair<>(LocalDateTime.now(), b);
+            logger.info("Plugin {} created image in {}ms", nowPlayingPlugin.getName(), System.currentTimeMillis() - now);
 
 
-        imageCache.put(new Pair<>(dimension, scale), pair);
+
+        } catch (Exception e) {
+            logger.error("Couldn't generate image", e);
+            Dimension onePercent = new Dimension(dimension.width / 100, dimension.height / 100);
+            g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, onePercent.height * 8));
+            g.setColor(Color.orange);
+            g.drawString("/!\\", onePercent.width * 10, onePercent.height * 10);
+        } finally {
+            g.dispose();
+        }
 
         return b;
 

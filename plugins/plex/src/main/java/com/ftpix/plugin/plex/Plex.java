@@ -230,7 +230,7 @@ public class Plex implements NowPlayingPlugin {
 
     @Override
     public String getName() {
-        return "plex";
+        return "Plex";
     }
 
     @Override

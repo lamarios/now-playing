@@ -3,6 +3,7 @@ package com.ftpix.nowplaying;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.InputStream;
 import java.util.concurrent.ForkJoinPool;
 
 public class Utils {

@@ -54,6 +54,8 @@ public interface Plugin {
 
     void stop();
 
+
+
     default Path getCacheFolder() throws IOException {
         Path data = CONFIG_FOLDER.resolve(getId()).resolve("cache").toAbsolutePath();
         Files.createDirectories(data);

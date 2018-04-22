@@ -30,10 +30,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalLoginPlugin {
@@ -83,7 +81,6 @@ public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalL
 
             int imageX = onePercent.width * 5;
             int imageY = dimension.height / 2 - albumArt.getHeight() / 2;
-            int percentHeightSpacing = 7;
             graphics.drawImage(albumArt, null, imageX, imageY);
 
             //drawing names
@@ -98,27 +95,23 @@ public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalL
 
 
             int textMaxWidth = dimension.width - textCurrentX - onePercent.width * 5;
-            drawString(nowPlaying.item.name, fontSize, textMaxWidth, graphics, textCurrentX, textCurrentY);
-
-
-            //drawing album
-            textCurrentY += lineHeight + onePercent.height * percentHeightSpacing;
-            drawString(nowPlaying.item.album.name, fontSize, textMaxWidth, graphics, textCurrentX, textCurrentY);
-
-            //drawing  artists
             String artists = nowPlaying.item.artists.stream().map(s -> s.name).collect(Collectors.joining(", "));
-            textCurrentY += lineHeight + onePercent.height * percentHeightSpacing;
-            drawString(artists, fontSize, textMaxWidth, graphics, textCurrentX, textCurrentY);
 
-            textCurrentY += onePercent.height * percentHeightSpacing;
-            //progress bar
-            int barLength = dimension.width - textCurrentX - onePercent.width * 5;
-            int barHeight = onePercent.height * 2;
-            graphics.setColor(Color.DARK_GRAY);
-            graphics.fillRect(textCurrentX, textCurrentY, barLength, barHeight);
-            double progress = (double) barLength * (((double) nowPlaying.progress_ms / (double) nowPlaying.item.duration_ms));
-            graphics.setColor(Color.WHITE);
-            graphics.fillRect(textCurrentX, textCurrentY, (int) progress, barHeight);
+            graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, fontSize));
+            int maxTextWidth = dimension.width - textCurrentX - onePercent.width * 10;
+            int percentHeightSpacing = 7 * onePercent.height;
+            List<String> texts = List.of(nowPlaying.item.name, nowPlaying.item.album.name, artists);
+            //now displaying texts
+            int fullHeight = texts.size() * lineHeight + texts.size() * percentHeightSpacing;
+            System.out.println(fullHeight);
+            int startFrom = dimension.height / 2 - fullHeight / 2 + lineHeight;
+            textCurrentY = startFrom;
+
+            for (String t : texts) {
+                drawString(t, fontSize, maxTextWidth, graphics, textCurrentX, textCurrentY);
+                textCurrentY += lineHeight + percentHeightSpacing;
+            }
+
         } else {
             graphics.setColor(Color.BLACK);
             graphics.fillRect(0, 0, dimension.width, dimension.height);
