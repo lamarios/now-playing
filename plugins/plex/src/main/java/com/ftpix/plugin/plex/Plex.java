@@ -6,32 +6,23 @@ import com.ftpix.nowplaying.SettingType;
 import com.ftpix.nowplaying.Utils;
 import com.ftpix.plugin.plex.model.PlexSession;
 import com.ftpix.plugin.plex.model.Video;
-import com.jhlabs.image.BoxBlurFilter;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.mashape.unirest.request.GetRequest;
 import net.coobird.thumbnailator.Thumbnails;
-import net.coobird.thumbnailator.resizers.Resizers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.w3c.dom.css.Rect;
 
 import javax.imageio.ImageIO;
-import javax.management.OperationsException;
-import javax.swing.*;
-import javax.swing.text.Utilities;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
-public class Plex implements NowPlayingPlugin {
+public class Plex implements NowPlayingPlugin<Video> {
 
     private static final String PLEX_SESSIONS_URL = "%sstatus/sessions?X-Plex-Token=%s",
             PLEX_ART_URL = "%s%s?X-Plex-Token=%s",
@@ -40,24 +31,27 @@ public class Plex implements NowPlayingPlugin {
     private static final String SETTINGS_URL = "url";
     private static final String SETTINGS_TOKEN = "token";
     private static final String SETTINGS_PLAYER = "player";
-    private BufferedImage art, thumb;
 
     private String url;
     private String token;
     private String player;
-    private Video nowPlaying;
     private final Logger logger = LogManager.getLogger();
 
     @Override
-    public void getNowPlayingImage(Graphics2D graphics, Dimension dimension, double scale) throws Exception {
-        Video video = getNowPlaying();
+    public Video getNowPlayingContent() throws Exception {
+        return getNowPlaying();
+    }
+
+    @Override
+    public void getNowPlayingImage(Video video, Graphics2D graphics, Dimension dimension, double scale) throws Exception {
         graphics.setColor(Color.BLACK);
         graphics.fillRect(0, 0, dimension.width, dimension.height);
 
         if (video != null) {
             Dimension onePercent = new Dimension(dimension.width / 100, dimension.height / 100);
 
-            setArtAndThumbnail(video);
+            Map<String, BufferedImage> images = setArtAndThumbnail(video);
+            BufferedImage art = images.get("art");
             int currentX = 0;
             int currentY = 0;
 
@@ -80,6 +74,8 @@ public class Plex implements NowPlayingPlugin {
                 graphics.fillRect(0, 0, dimension.width, dimension.height);
 
             }
+
+            BufferedImage thumb = images.get("thumb");
             if (thumb != null) {
                 BufferedImage scaledThumb = Thumbnails.of(thumb).size(onePercent.width * 30, onePercent.height * 90).asBufferedImage();
                 scaledThumb = Utils.makeRoundedCorner(Thumbnails.of(scaledThumb).size(dimension.height / 2, dimension.height / 2).asBufferedImage(), 20);
@@ -169,63 +165,60 @@ public class Plex implements NowPlayingPlugin {
      *
      * @param video
      */
-    private void setArtAndThumbnail(Video video) throws IOException {
-        if (nowPlaying == null || !video.key.equalsIgnoreCase(nowPlaying.key)) {
-            String art = Optional.ofNullable(video.art)
+    private Map<String, BufferedImage> setArtAndThumbnail(Video video) throws IOException {
+        String art = Optional.ofNullable(video.art)
+                .filter(a -> a.trim().length() > 0)
+                .orElse(
+                        Optional.ofNullable(video.parentArt)
+                                .filter(a -> a.trim().length() > 0)
+                                .orElse(
+                                        Optional.ofNullable(video.grandparentArt)
+                                                .filter(a -> a.trim().length() > 0)
+                                                .orElse("")
+                                )
+                );
+
+        String artUrl = art.trim().length() > 0 ? String.format(PLEX_ART_URL, url.substring(0, url.length() - 1), art, token) : null;
+
+        String thumbUrl = null;
+        if (video.type.equalsIgnoreCase("episode")) {
+            String thumb = Optional.ofNullable(video.grandparentThumb)
                     .filter(a -> a.trim().length() > 0)
                     .orElse(
-                            Optional.ofNullable(video.parentArt)
+                            Optional.ofNullable(video.parentThumb)
                                     .filter(a -> a.trim().length() > 0)
                                     .orElse(
-                                            Optional.ofNullable(video.grandparentArt)
+                                            Optional.ofNullable(video.thumb)
                                                     .filter(a -> a.trim().length() > 0)
                                                     .orElse("")
                                     )
                     );
 
-            String artUrl = art.trim().length() > 0?String.format(PLEX_ART_URL, url.substring(0, url.length() - 1), art, token):null;
-
-            String thumbUrl = null;
-            if (video.type.equalsIgnoreCase("episode")) {
-                String thumb = Optional.ofNullable(video.grandparentThumb)
-                        .filter(a -> a.trim().length() > 0)
-                        .orElse(
-                                Optional.ofNullable(video.parentThumb)
-                                        .filter(a -> a.trim().length() > 0)
-                                        .orElse(
-                                                Optional.ofNullable(video.thumb)
-                                                        .filter(a -> a.trim().length() > 0)
-                                                        .orElse("")
-                                        )
-                        );
-
-                thumbUrl = thumb.trim().length() > 0 ?String.format(PLEX_ART_URL, url.substring(0, url.length() - 1), thumb, token):null;
-
-            } else {
-                String thumb = Optional.ofNullable(video.thumb)
-                        .filter(a -> a.trim().length() > 0)
-                        .orElse(
-                                Optional.ofNullable(video.parentThumb)
-                                        .filter(a -> a.trim().length() > 0)
-                                        .orElse(
-                                                Optional.ofNullable(video.grandparentThumb)
-                                                        .filter(a -> a.trim().length() > 0)
-                                                        .orElse("")
-                                        )
-                        );
-
-                thumbUrl = thumb.trim().length() > 0?String.format(PLEX_ART_URL, url.substring(0, url.length() - 1), thumb, token):null;
-            }
-
-
-            this.art = ImageIO.read(new URL(artUrl));
-            this.thumb = ImageIO.read(new URL(thumbUrl));
-
-            nowPlaying = video;
+            thumbUrl = thumb.trim().length() > 0 ? String.format(PLEX_ART_URL, url.substring(0, url.length() - 1), thumb, token) : null;
 
         } else {
-            logger.info("GEtting images from cache");
+            String thumb = Optional.ofNullable(video.thumb)
+                    .filter(a -> a.trim().length() > 0)
+                    .orElse(
+                            Optional.ofNullable(video.parentThumb)
+                                    .filter(a -> a.trim().length() > 0)
+                                    .orElse(
+                                            Optional.ofNullable(video.grandparentThumb)
+                                                    .filter(a -> a.trim().length() > 0)
+                                                    .orElse("")
+                                    )
+                    );
+
+            thumbUrl = thumb.trim().length() > 0 ? String.format(PLEX_ART_URL, url.substring(0, url.length() - 1), thumb, token) : null;
         }
+
+
+        Map<String, BufferedImage> values = new HashMap<>();
+
+        values.put("art", ImageIO.read(new URL(artUrl)));
+        values.put("thumb", ImageIO.read(new URL(thumbUrl)));
+
+        return values;
     }
 
     @Override

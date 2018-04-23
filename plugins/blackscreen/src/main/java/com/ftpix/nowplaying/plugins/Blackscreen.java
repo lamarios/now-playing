@@ -8,12 +8,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-public class Blackscreen implements NowPlayingPlugin {
+public class Blackscreen implements NowPlayingPlugin<Integer> {
 
     public static final String BLACK_SCREEN_PLUGIN_ID = "com.ftpix.nowplaying.plugin.blackscreen";
 
     @Override
-    public void getNowPlayingImage(Graphics2D graphics, Dimension dimension, double scale) {
+    public Integer getNowPlayingContent() throws Exception {
+        return 1;
+    }
+
+    @Override
+    public void getNowPlayingImage(Integer i, Graphics2D graphics, Dimension dimension, double scale) {
         graphics.setPaint(Color.BLACK);
         graphics.fillRect(0, 0, dimension.width, dimension.height);
     }

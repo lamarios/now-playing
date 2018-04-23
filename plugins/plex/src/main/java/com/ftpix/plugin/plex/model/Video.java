@@ -125,4 +125,16 @@ public class Video {
     }
 
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Video) {
+            Video o = (Video) obj;
+            if (key != null && o.key != null) {
+                return key.equalsIgnoreCase(o.key);
+            }
+        }
+        return false;
+    }
+
+
 }

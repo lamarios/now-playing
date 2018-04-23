@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class PhotoFrame implements NowPlayingPlugin {
+public class PhotoFrame implements NowPlayingPlugin<Path> {
 
     public static final String SETTINGS_LOCATION = "location";
     public static final String SETTING_REFRESH_RATE = "refreshRate";
@@ -34,38 +34,10 @@ public class PhotoFrame implements NowPlayingPlugin {
 
 
     @Override
-    public void getNowPlayingImage(Graphics2D graphics, Dimension dimension, double scale) throws Exception {
-        graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 50));
-
-        graphics.setColor(Color.BLACK);
-        graphics.fillRect(0, 0, dimension.width, dimension.height);
-
-        //in case of error text needs to be white
-        graphics.setColor(Color.white);
-        try {
-            BufferedImage image = getImage();
-            if (image != null) {
-                image = Thumbnails.of(image).size(dimension.width, dimension.height).asBufferedImage();
-                graphics.drawImage(image, null, dimension.width / 2 - image.getWidth() / 2, dimension.height / 2 - image.getHeight() / 2);
-            } else {
-                graphics.drawString("Couldn't find image to display, check your settings", 10, 100);
-            }
-        } catch (Exception e) {
-            graphics.drawString("Couldn't find image to display, check your settings", 10, 100);
-        }
-
-    }
-
-    /**
-     * Gets an image randomly from the folder or read get from cache
-     * @return
-     * @throws IOException
-     */
-    private BufferedImage getImage() throws IOException {
+    public Path getNowPlayingContent() throws IOException {
         LocalDateTime now = LocalDateTime.now();
 
         if (currentImage == null || now.minus(refreshRate, ChronoUnit.MINUTES).isAfter(lastFetched)) {
-            logger.info("we need to load a new picture");
             List<Path> pictures = Files.list(path)
                     .filter(Files::isRegularFile)
                     .peek(p -> logger.info("- {}", p.toAbsolutePath().toString()))
@@ -76,20 +48,41 @@ public class PhotoFrame implements NowPlayingPlugin {
                 Collections.shuffle(pictures);
                 currentImage = pictures.get(0);
                 lastFetched = now;
-                return ImageIO.read(currentImage.toFile());
+                return currentImage;
 
             } else {
                 return null;
             }
-
-
         } else {
-            logger.info("Loading from cache");
-            return ImageIO.read(currentImage.toFile());
+            return currentImage;
+        }
+    }
+
+    @Override
+    public void getNowPlayingImage(Path content, Graphics2D graphics, Dimension dimension, double scale) throws Exception {
+        graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 50));
+
+        graphics.setColor(Color.BLACK);
+        graphics.fillRect(0, 0, dimension.width, dimension.height);
+
+        //in case of error text needs to be white
+        graphics.setColor(Color.white);
+        if (currentImage != null) {
+            try {
+                BufferedImage image = ImageIO.read(currentImage.toFile());
+                if (image != null) {
+                    image = Thumbnails.of(image).size(dimension.width, dimension.height).asBufferedImage();
+                    graphics.drawImage(image, null, dimension.width / 2 - image.getWidth() / 2, dimension.height / 2 - image.getHeight() / 2);
+                } else {
+                    graphics.drawString("Couldn't find image to display, check your settings", 10, 100);
+                }
+            } catch (Exception e) {
+                graphics.drawString("Couldn't find image to display, check your settings", 10, 100);
+            }
         }
 
-
     }
+
 
     @Override
     public String getName() {

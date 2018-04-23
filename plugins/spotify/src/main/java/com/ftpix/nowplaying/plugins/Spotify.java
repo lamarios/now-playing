@@ -34,7 +34,7 @@ import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalLoginPlugin {
+public class Spotify implements NowPlayingPlugin<SpotifyNowPlaying>, MediaActivityPlugin, ExternalLoginPlugin {
     private final Logger logger = LogManager.getLogger();
     private SpotifyToken token;
     public static final String SPOTIFY_API_TOKEN = "https://accounts.spotify.com/api/token";
@@ -44,18 +44,19 @@ public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalL
     private static final String SETTINGS_CLIENT_ID = "clientId";
     private String clientSecret;
     private String clientID;
-    private String currentlyPlaying;
-    private BufferedImage art, blurredArt;
 
 
     private final Gson gson = new GsonBuilder().create();
     private boolean loggedIn = false;
 
     @Override
-    public void getNowPlayingImage(Graphics2D graphics, Dimension dimension, double scale) throws Exception {
-        Dimension onePercent = new Dimension(dimension.width / 100, dimension.height / 100);
+    public SpotifyNowPlaying getNowPlayingContent() throws UnirestException {
+        return getNowPlaying();
+    }
 
-        SpotifyNowPlaying nowPlaying = getNowPlaying();
+    @Override
+    public void getNowPlayingImage(SpotifyNowPlaying nowPlaying, Graphics2D graphics, Dimension dimension, double scale) throws Exception {
+        Dimension onePercent = new Dimension(dimension.width / 100, dimension.height / 100);
 
         if (nowPlaying != null && nowPlaying.is_playing) {
             Pair<BufferedImage, BufferedImage> nowPlayingImage = getNowPlayingImage(nowPlaying);
@@ -153,40 +154,27 @@ public class Spotify implements NowPlayingPlugin, MediaActivityPlugin, ExternalL
      * @throws IOException
      */
     private Pair<BufferedImage, BufferedImage> getNowPlayingImage(SpotifyNowPlaying nowPlaying) throws IOException {
-        if (art != null
-                && blurredArt != null
-                && (currentlyPlaying != null && nowPlaying.item.id.equalsIgnoreCase(currentlyPlaying))) {
-            //loading from file
-            logger.info("Loading album art from cache");
-            return new Pair<>(art, blurredArt);
-        } else {
-            //we need to download it
-            logger.info("Downloading album art");
-            BufferedImage art = nowPlaying.item.album.images
-                    .stream()
-                    .sorted(Comparator.comparingInt((Image value) -> value.width).reversed())
-                    .findFirst()
-                    .map(i -> {
-                        try {
-                            return ImageIO.read(new URL(i.url));
-                        } catch (IOException e) {
-                            logger.error("Couldn't get image from Spotify");
-                            return null;
-                        }
-                    })
-                    .filter(i -> i != null)
-                    .orElseThrow(() -> new IOException("This song doesn't have image"));
+        //we need to download it
+        logger.info("Downloading album art");
+        BufferedImage art = nowPlaying.item.album.images
+                .stream()
+                .sorted(Comparator.comparingInt((Image value) -> value.width).reversed())
+                .findFirst()
+                .map(i -> {
+                    try {
+                        return ImageIO.read(new URL(i.url));
+                    } catch (IOException e) {
+                        logger.error("Couldn't get image from Spotify");
+                        return null;
+                    }
+                })
+                .filter(i -> i != null)
+                .orElseThrow(() -> new IOException("This song doesn't have image"));
 
-            BufferedImage blurred = new BoxBlurFilter(100, 100, 1).filter(art, null);
-
-            this.currentlyPlaying = nowPlaying.item.id;
-            this.art = art;
-            this.blurredArt = blurred;
+        BufferedImage blurred = new BoxBlurFilter(100, 100, 1).filter(art, null);
 
 
-            return new Pair<>(art, blurred);
-
-        }
+        return new Pair<>(art, blurred);
 
 
     }
