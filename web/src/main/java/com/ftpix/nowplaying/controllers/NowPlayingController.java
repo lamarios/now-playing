@@ -155,11 +155,13 @@ public class NowPlayingController {
 
                     byte[] bytes = bufferedImagetoBytes(b);
 
-                    CacheEntry cacheEntry = new CacheEntry();
-                    cacheEntry.time = LocalDateTime.now();
-                    cacheEntry.content = nowPlayingContent;
-                    cacheEntry.image = bytes;
-                    imageCache.put(cacheIndex, cacheEntry);
+                    if (nowPlayingContent != null) {
+                        CacheEntry cacheEntry = new CacheEntry();
+                        cacheEntry.time = LocalDateTime.now();
+                        cacheEntry.content = nowPlayingContent;
+                        cacheEntry.image = bytes;
+                        imageCache.put(cacheIndex, cacheEntry);
+                    }
 
                     return bytes;
                 } finally {
