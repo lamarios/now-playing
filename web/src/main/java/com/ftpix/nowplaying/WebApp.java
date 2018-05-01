@@ -1,6 +1,7 @@
 package com.ftpix.nowplaying;
 
 import com.ftpix.nowplaying.controllers.ActivitiesController;
+import com.ftpix.nowplaying.controllers.NowPlayingWebSocket;
 import com.ftpix.nowplaying.models.Config;
 import com.ftpix.nowplaying.transformers.GsonTransformer;
 import com.ftpix.nowplaying.utils.PluginUtil;
@@ -74,11 +75,13 @@ public class WebApp {
         } else {
             Spark.staticFiles.location("/web/public");
         }
-
+        Spark.webSocket("/ws", NowPlayingWebSocket.class);
 
         Spark.before("*", (request, response) -> {
             logger.info("{} {}", request.requestMethod(), request.pathInfo());
         });
+
+
 
         PluginUtil.PLUGIN_INSTANCES.values()
                 .stream()

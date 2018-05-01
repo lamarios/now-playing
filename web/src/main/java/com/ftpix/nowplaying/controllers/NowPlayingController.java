@@ -102,7 +102,7 @@ public class NowPlayingController {
 
 
         res.raw().setContentType("application/octet-stream");
-        res.raw().setHeader("Content-Disposition", "inline; filename=now-playing-" + dimension.width + "x" + dimension.height + "x" + scale + ".png");
+        res.raw().setHeader("Content-Disposition", "inline; filename=now-playing-" + dimension.width + "x" + dimension.height + "x" + scale + ".jpg");
 
 
         res.raw().getOutputStream().write(toUse);
@@ -136,7 +136,8 @@ public class NowPlayingController {
                 imageCache.get(cacheIndex).time = LocalDateTime.now();
                 return imageCache.get(cacheIndex).getImage();
             } else {
-                BufferedImage b = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
+                BufferedImage b = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_3BYTE_BGR);
+//                BufferedImage b = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
                 Graphics2D g = b.createGraphics();
                 try {
                     RenderingHints rh = new RenderingHints(
@@ -209,7 +210,8 @@ public class NowPlayingController {
      */
     private byte[] bufferedImagetoBytes(BufferedImage b) throws IOException {
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            ImageIO.write(b, "png", os);
+
+            ImageIO.write(b, "JPG", os);
             return os.toByteArray();
         } finally {
         }
