@@ -36,6 +36,7 @@ public class NowPlayingWebSocket {
 
         try {
             if (timer == null) {
+                logger.info("Starting timer");
                 timer = new Timer("now-playing");
                 timer.schedule(new TimerTask() {
                     @Override
@@ -44,10 +45,11 @@ public class NowPlayingWebSocket {
                     }
                 }, 0, CONTENT_CHECK_DELAY);
             } else {
+                logger.info("Timer already running, letting client know to just refresh image");
                 user.getRemote().sendString(REFRESH_MESSAGE);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Couldn't start timer ", e);
         }
 
     }
@@ -59,20 +61,16 @@ public class NowPlayingWebSocket {
 
         users.remove(user);
 
-
         logger.info("{} clients remaining", users.size());
-
+        // resetting everything
         if (users.isEmpty()) {
             timer.cancel();
+            timer = null;
+            nowPlaying = null;
             logger.info("Terminating timer");
         }
     }
 
-
-    @OnWebSocketMessage
-    public void onMessage(Session user, String message) {
-
-    }
 
     public void timerTask() {
         logger.info("Checking content");
