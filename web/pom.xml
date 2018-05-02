@@ -44,6 +44,11 @@
         </dependency>
         <dependency>
             <groupId>com.ftpix.nowplaying</groupId>
+            <artifactId>yamaha</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.ftpix.nowplaying</groupId>
             <artifactId>blackscreen</artifactId>
             <version>${project.version}</version>
         </dependency>

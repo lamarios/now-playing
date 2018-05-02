@@ -18,6 +18,7 @@
         <module>spotify</module>
         <module>photo-frame</module>
         <module>plex</module>
+        <module>yamaha</module>
     </modules>
     <groupId>com.ftpix.nowplaying</groupId>
     <artifactId>plugins</artifactId>

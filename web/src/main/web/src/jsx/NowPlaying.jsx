@@ -6,24 +6,58 @@ export default class NowPlaying extends React.Component {
         super();
 
         this.getImage = this.getImage.bind(this);
-        this.state = {timeout: null, image: null, webSocket: null};
+        this.state = {timeout: null, image: null, webSocket: null, heartbeat: null};
 
         this.onMessage = this.onMessage.bind(this);
+        this.heartbeat = this.heartbeat.bind(this);
+        this.connect = this.connect.bind(this);
     }
 
     componentDidMount() {
         // this.getImage();
-        const webSocket = new WebSocket("ws://" + location.hostname + ":" + location.port + "/ws");
-        webSocket.onmessage = this.onMessage;
-
-        this.setState({webSocket});
+        this.connect();
     }
 
     componentWillUnmount() {
         // clearTimeout(this.state.timeout);
-
+        clearTimeout(this.state.heartbeat);
     }
 
+
+    /**
+     * connects to the websocket
+     */
+    connect() {
+        //clearing timeout if it's still running
+        clearTimeout(this.state.heartbeat);
+        console.log('Connecting to websocket.');
+        const webSocket = new WebSocket("ws://" + location.hostname + ":" + location.port + "/ws");
+        webSocket.onmessage = this.onMessage;
+        webSocket.onclose = () => {
+            console.log('disconnected');
+            setTimeout(this.connect, 20000);
+        }
+        webSocket.onerror = () => {
+            console.log('error');
+            setTimeout(this.connect, 20000);
+        }
+        this.setState({webSocket});
+        this.heartbeat();
+    }
+
+    /**
+     * Keeps the connection alive
+     */
+    heartbeat() {
+        var timeout = 20000;
+        if (this.state.webSocket !== null && this.state.webSocket.readyState === this.state.webSocket.OPEN) {
+            this.state.webSocket.send('ping');
+            console.log('ping');
+        }
+
+        this.setState({heartbeat: setTimeout(this.heartbeat, timeout)})
+
+    }
 
     /**
      * Upon receiving websocket messages

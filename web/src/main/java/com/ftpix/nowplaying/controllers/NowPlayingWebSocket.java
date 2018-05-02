@@ -54,6 +54,13 @@ public class NowPlayingWebSocket {
 
     }
 
+    @OnWebSocketMessage
+    public void onMessage(Session user, String message) throws IOException {
+        if(message.equalsIgnoreCase("ping")){
+            user.getRemote().sendString("pong");
+        }
+    }
+
 
     @OnWebSocketClose
     public void onClose(Session user, int statusCpde, String reason) {
@@ -82,7 +89,7 @@ public class NowPlayingWebSocket {
             NowPlayingPlugin nowPlayingPlugin = (NowPlayingPlugin) PluginUtil.PLUGIN_INSTANCES.get(WebApp.CONFIG.activityMapping.get(currentActivity.getId()));
 
             Object nowPlayingContent = nowPlayingPlugin.getNowPlayingContent();
-            if (!nowPlayingContent.equals(nowPlaying)) {
+            if (nowPlayingContent != null && !nowPlayingContent.equals(nowPlaying)) {
                 logger.info("Content has change letting clients know");
                 nowPlaying = nowPlayingContent;
                 users.stream()
