@@ -35,4 +35,29 @@ public class Utils {
         return output;
     }
 
+    /**
+     * Try to fit string in given width
+     *
+     * @param text
+     * @param wantedFontSize
+     * @param maxLength
+     * @param graphics
+     * @param x
+     * @param y
+     * @return
+     */
+    public static void fitString(String text, int wantedFontSize, int maxLength, Graphics2D graphics, int x, int y) {
+        Font font;
+        int textWidth = 0;
+        do {
+            wantedFontSize--;
+            font = new Font(Font.SANS_SERIF, Font.PLAIN, wantedFontSize);
+            textWidth = (int) font.getStringBounds(text, graphics.getFontRenderContext()).getWidth();
+        } while (textWidth > maxLength);
+
+        graphics.setFont(font);
+        graphics.drawString(text, x, y);
+
+
+    }
 }
