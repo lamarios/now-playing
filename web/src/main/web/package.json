@@ -20,7 +20,7 @@
     "css-loader": "^0.28.7",
     "file-loader": "^1.1.11",
     "http-server": "^0.10.0",
-    "less": "^2.7.2",
+    "less": "^3.0.4",
     "less-loader": "^4.0.5",
     "style-loader": "^0.18.2",
     "url-loader": "^1.0.1",
