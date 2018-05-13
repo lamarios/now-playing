@@ -11,9 +11,10 @@ export default class PluginSettings extends React.Component {
     render() {
         return (<div className="PluginSettings">
             <h2>Plugin Settings</h2>
+            <p>You can set up all your plugins here</p>
             {this.props.plugins.map((p, i) => {
                 if (p.settings != undefined && p.settings.length > 0) {
-                    return (<div key={p.id}>
+                    return (<div key={p.id} className='settings'>
                         <h3>{p.name}</h3>
                         <p>Can be used as: {p.tags}</p>
                         <SinglePluginSettings settings={p.settings} plugin={p.id} values={p.settingsValues}/>

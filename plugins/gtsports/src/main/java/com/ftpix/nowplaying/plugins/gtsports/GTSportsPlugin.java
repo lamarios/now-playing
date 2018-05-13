@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.ftpix.nowplaying.Utils.getPercentOf;
+
 public class GTSportsPlugin implements NowPlayingPlugin<GTSportRaces> {
     @Override
     public GTSportRaces getNowPlayingContent() throws Exception {
@@ -30,36 +32,38 @@ public class GTSportsPlugin implements NowPlayingPlugin<GTSportRaces> {
 
     @Override
     public void getNowPlayingImage(GTSportRaces races, Graphics2D graphics, Dimension dimension, double scale) throws Exception {
-        Dimension onePercent = new Dimension(dimension.width / 100, dimension.height / 100);
+
+        int middleWidth = dimension.width - getPercentOf(dimension, 66).width;
+        int width33Percent = getPercentOf(dimension, 33).width;
 
         Optional<DailyRace> raceA = Optional.ofNullable(races.getRaceA());
         if (raceA.isPresent()) {
-            drawSingleRace(raceA.get(), graphics, 0, 0, onePercent.width * 33, dimension.height);
+            drawSingleRace(raceA.get(), graphics, 0, 0, width33Percent, dimension.height);
         }
 
         Optional<DailyRace> raceB = Optional.ofNullable(races.getRaceB());
         if (raceB.isPresent()) {
-            drawSingleRace(raceB.get(), graphics, onePercent.width * 33, 0, onePercent.width * 33 + onePercent.width, dimension.height);
+            drawSingleRace(raceB.get(), graphics, width33Percent, 0, middleWidth, dimension.height);
         }
 
         Optional<DailyRace> raceC = Optional.ofNullable(races.getRaceC());
         if (raceC.isPresent()) {
-            drawSingleRace(raceC.get(), graphics, onePercent.width * 66, 0, onePercent.width * 33, dimension.height);
+            drawSingleRace(raceC.get(), graphics, width33Percent + middleWidth, 0, width33Percent, dimension.height);
         }
 
 
         graphics.setColor(Color.BLACK);
-        graphics.drawLine(onePercent.width * 33, 0, onePercent.width * 33, dimension.height);
-        graphics.drawLine(onePercent.width * 66 + onePercent.width, 0, onePercent.width * 66 + onePercent.width, dimension.height);
+        graphics.drawLine(width33Percent, 0, width33Percent, dimension.height);
+        graphics.drawLine(width33Percent + middleWidth, 0, width33Percent + middleWidth, dimension.height);
 
     }
 
 
     private void drawSingleRace(DailyRace race, Graphics2D g, int x, int y, int width, int height) throws IOException {
-        Dimension onePercent = new Dimension(width / 100, height / 100);
+        Dimension dimension = new Dimension(width, height);
         //Drawing image
         BufferedImage image = ImageIO.read(new URL(race.getImageUrl()));
-        image = Thumbnails.of(image).height(onePercent.height * 75).asBufferedImage();
+        image = Thumbnails.of(image).height(getPercentOf(dimension, 75).height).asBufferedImage();
 
         if (image.getWidth() > width) {
             image = image.getSubimage((image.getWidth() - width) / 2, 0, width, image.getHeight());
@@ -67,7 +71,7 @@ public class GTSportsPlugin implements NowPlayingPlugin<GTSportRaces> {
 
         g.drawImage(image, x + width / 2 - image.getWidth() / 2, 0, null);
 
-        int fontSize = onePercent.height * 4;
+        int fontSize = getPercentOf(dimension, 4).height;
         g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, fontSize));
         Rectangle2D stringBounds = g.getFont().getStringBounds(race.getRaceType().getLabel(), g.getFontRenderContext());
 
@@ -79,53 +83,53 @@ public class GTSportsPlugin implements NowPlayingPlugin<GTSportRaces> {
         GradientPaint gradient = new GradientPaint(0, 0, startColor, 0, (float) stringBounds.getHeight(), endColor);
         g.setPaint(gradient);
 
-        g.fillRect(x, 0, width, (int) (stringBounds.getHeight() + onePercent.height));
+        g.fillRect(x, 0, width, (int) (stringBounds.getHeight() + getPercentOf(dimension, 1).height));
 
         g.setColor(Color.WHITE);
 
-        g.drawString(race.getRaceType().getLabel(), (int) (width - stringBounds.getWidth() - onePercent.width * 5) + x, (int) (stringBounds.getHeight()));
+        g.drawString(race.getRaceType().getLabel(), (int) (width - stringBounds.getWidth() - getPercentOf(dimension, 5).width) + x, (int) (stringBounds.getHeight()));
 
 
         //car class
-        fontSize = onePercent.height * 8;
+        fontSize = getPercentOf(dimension, 8).height;
 
         g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, fontSize));
         stringBounds = g.getFont().getStringBounds(race.getCarClass(), g.getFontRenderContext());
 
-        int textX = x + onePercent.width * 5;
-        int textY = (int) (onePercent.getHeight() * 70);
-        int textMaxWidth = width - onePercent.width * 10;
+        int textX = x + getPercentOf(dimension, 5).width;
+        int textY = getPercentOf(dimension, 70).height;
+        int textMaxWidth = width - getPercentOf(dimension, 10).width;
         Utils.fitString(race.getCarClass(), fontSize, textMaxWidth, g, textX, textY);
 
-        fontSize = onePercent.height * 3;
-        textY = onePercent.height * 74;
+        fontSize = getPercentOf(dimension, 3).height;
+        textY = getPercentOf(dimension, 74).height;
         Utils.fitString(race.getTrackName(), fontSize, textMaxWidth, g, textX, textY);
 
 
         //info
         g.setColor(new Color(25, 25, 25));
-        g.fillRect(x, onePercent.height * 75, width, height - onePercent.height * 75);
+        g.fillRect(x, getPercentOf(dimension, 75).height, width, height - getPercentOf(dimension, 75).height);
         g.setColor(Color.white);
 
-        fontSize = onePercent.height * 10;
+        fontSize = getPercentOf(dimension, 10).height;
 
         g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, fontSize));
         stringBounds = g.getFont().getStringBounds(race.getTime(), g.getFontRenderContext());
-        textY += onePercent.height * 11;
+        textY += getPercentOf(dimension, 11).height;
         Utils.fitString(race.getTime(), fontSize, textMaxWidth, g, x + (int) (width / 2 - stringBounds.getWidth() / 2), textY);
 
         //draw separator
-        textY += onePercent.height * 2;
+        textY += getPercentOf(dimension, 2).height;
 
         g.setColor(new Color(50, 50, 50));
         g.drawLine(x, textY, width + x, textY);
 
-        fontSize = onePercent.height * 2;
+        fontSize = getPercentOf(dimension, 2).height;
         g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, fontSize));
         stringBounds = g.getFont().getStringBounds("laps", g.getFontRenderContext());
 
-        textY += onePercent.height * 1 + stringBounds.getHeight();
-        textMaxWidth = width / 3 - onePercent.width * 5;
+        textY += getPercentOf(dimension, 1).height + stringBounds.getHeight();
+        textMaxWidth = width / 3 - getPercentOf(dimension, 5).width;
 
         g.setColor(new Color(150, 150, 150));
         Utils.fitString("Laps", fontSize, textMaxWidth, g, textX, textY);
@@ -133,10 +137,10 @@ public class GTSportsPlugin implements NowPlayingPlugin<GTSportRaces> {
         Utils.fitString("Duration", fontSize, textMaxWidth, g, textX + (width / 3) * 2, textY);
 
         g.setColor(Color.white);
-        fontSize = onePercent.height * 4;
+        fontSize = getPercentOf(dimension, 4).height;
         g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, fontSize));
         stringBounds = g.getFont().getStringBounds("laps", g.getFontRenderContext());
-        textY += onePercent.height * 1 + stringBounds.getHeight();
+        textY += getPercentOf(dimension, 1).height + stringBounds.getHeight();
 
         Utils.fitString(Integer.toString(race.getLaps()), fontSize, textMaxWidth, g, textX, textY);
         Utils.fitString(Integer.toString(race.getCars()), fontSize, textMaxWidth, g, textX + width / 3, textY);

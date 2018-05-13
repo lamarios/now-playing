@@ -69,7 +69,7 @@ public class NowPlayingController {
      * @param res
      * @return
      */
-    @SparkGet("/now-playing.png")
+    @SparkGet("/now-playing.jpg")
     public Object nowPlaying(@SparkQueryParam("width") Integer width, @SparkQueryParam("height") Integer height, @SparkQueryParam("scale") Double scale, Response res) throws Exception {
 
         Dimension dimension = FULL_HD;

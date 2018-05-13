@@ -57,7 +57,20 @@ public class Utils {
 
         graphics.setFont(font);
         graphics.drawString(text, x, y);
+    }
 
 
+    /**
+     * GEts a x percent of a dimension
+     *
+     * @param dimension
+     * @param percent
+     * @return
+     */
+    public static Dimension getPercentOf(Dimension dimension, int percent) {
+        double width = (dimension.getWidth() / 100d) * percent;
+        double height = (dimension.getHeight() / 100d) * percent;
+
+        return new Dimension((int) width, (int) height);
     }
 }
