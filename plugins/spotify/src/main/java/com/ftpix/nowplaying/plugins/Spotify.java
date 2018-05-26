@@ -116,6 +116,13 @@ public class Spotify implements NowPlayingPlugin<SpotifyNowPlaying>, MediaActivi
         } else {
             graphics.setColor(Color.BLACK);
             graphics.fillRect(0, 0, dimension.width, dimension.height);
+
+            Dimension fiftyPercent = Utils.getPercentOf(dimension, 50);
+            int iconScale = Math.min(fiftyPercent.width, fiftyPercent.height);
+
+            graphics.translate(dimension.width / 2 - iconScale / 2, dimension.height / 2 - iconScale / 2);
+            graphics.scale(iconScale, iconScale);
+            Icon.paint(graphics);
         }
 
     }

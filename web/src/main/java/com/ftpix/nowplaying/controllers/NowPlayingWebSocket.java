@@ -56,7 +56,7 @@ public class NowPlayingWebSocket {
 
     @OnWebSocketMessage
     public void onMessage(Session user, String message) throws IOException {
-        if(message.equalsIgnoreCase("ping")){
+        if (message.equalsIgnoreCase("ping")) {
             user.getRemote().sendString("pong");
         }
     }
@@ -89,7 +89,9 @@ public class NowPlayingWebSocket {
             NowPlayingPlugin nowPlayingPlugin = (NowPlayingPlugin) PluginUtil.PLUGIN_INSTANCES.get(WebApp.CONFIG.activityMapping.get(currentActivity.getId()));
 
             Object nowPlayingContent = nowPlayingPlugin.getNowPlayingContent();
-            if (nowPlayingContent != null && !nowPlayingContent.equals(nowPlaying)) {
+
+            //it's ok to go through when content in null, plugin can show their empty screen
+            if (nowPlayingContent == null || !nowPlayingContent.equals(nowPlaying)) {
                 logger.info("Content has change letting clients know");
                 nowPlaying = nowPlayingContent;
                 users.stream()

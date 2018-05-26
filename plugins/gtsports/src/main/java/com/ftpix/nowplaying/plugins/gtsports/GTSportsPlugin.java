@@ -32,29 +32,29 @@ public class GTSportsPlugin implements NowPlayingPlugin<GTSportRaces> {
 
     @Override
     public void getNowPlayingImage(GTSportRaces races, Graphics2D graphics, Dimension dimension, double scale) throws Exception {
+        if (races != null) {
+            int middleWidth = dimension.width - getPercentOf(dimension, 66).width;
+            int width33Percent = getPercentOf(dimension, 33).width;
 
-        int middleWidth = dimension.width - getPercentOf(dimension, 66).width;
-        int width33Percent = getPercentOf(dimension, 33).width;
+            Optional<DailyRace> raceA = Optional.ofNullable(races.getRaceA());
+            if (raceA.isPresent()) {
+                drawSingleRace(raceA.get(), graphics, 0, 0, width33Percent, dimension.height);
+            }
 
-        Optional<DailyRace> raceA = Optional.ofNullable(races.getRaceA());
-        if (raceA.isPresent()) {
-            drawSingleRace(raceA.get(), graphics, 0, 0, width33Percent, dimension.height);
+            Optional<DailyRace> raceB = Optional.ofNullable(races.getRaceB());
+            if (raceB.isPresent()) {
+                drawSingleRace(raceB.get(), graphics, width33Percent, 0, middleWidth, dimension.height);
+            }
+
+            Optional<DailyRace> raceC = Optional.ofNullable(races.getRaceC());
+            if (raceC.isPresent()) {
+                drawSingleRace(raceC.get(), graphics, width33Percent + middleWidth, 0, width33Percent, dimension.height);
+            }
+
+            graphics.setColor(Color.BLACK);
+            graphics.drawLine(width33Percent, 0, width33Percent, dimension.height);
+            graphics.drawLine(width33Percent + middleWidth, 0, width33Percent + middleWidth, dimension.height);
         }
-
-        Optional<DailyRace> raceB = Optional.ofNullable(races.getRaceB());
-        if (raceB.isPresent()) {
-            drawSingleRace(raceB.get(), graphics, width33Percent, 0, middleWidth, dimension.height);
-        }
-
-        Optional<DailyRace> raceC = Optional.ofNullable(races.getRaceC());
-        if (raceC.isPresent()) {
-            drawSingleRace(raceC.get(), graphics, width33Percent + middleWidth, 0, width33Percent, dimension.height);
-        }
-
-
-        graphics.setColor(Color.BLACK);
-        graphics.drawLine(width33Percent, 0, width33Percent, dimension.height);
-        graphics.drawLine(width33Percent + middleWidth, 0, width33Percent + middleWidth, dimension.height);
 
     }
 
