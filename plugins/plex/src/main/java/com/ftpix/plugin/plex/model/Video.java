@@ -117,7 +117,7 @@ public class Video {
             JSONObject object = json.getJSONObject("Player");
             video.player = Player.fromJson(object);
         } catch (JSONException e) {
-            e.printStackTrace();
+
         }
 
 

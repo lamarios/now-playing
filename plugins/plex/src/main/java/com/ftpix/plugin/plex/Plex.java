@@ -16,7 +16,6 @@ import org.apache.logging.log4j.Logger;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
@@ -26,6 +25,7 @@ import java.util.List;
 public class Plex implements NowPlayingPlugin<Video> {
 
     private static final String PLEX_SESSIONS_URL = "%sstatus/sessions?X-Plex-Token=%s",
+            PLEX_DECK_URL = "%slibrary/onDeck?X-Plex-Token=%s",
             PLEX_ART_URL = "%s%s?X-Plex-Token=%s",
             PLEX_HEADER_ACCEPT = "Accept",
             PLEX_HEADER_ACCEPT_VALUE = "application/json";
@@ -59,16 +59,7 @@ public class Plex implements NowPlayingPlugin<Video> {
             int fontSize = onePercent.height * 8;
 
             if (art != null) {
-                Thumbnails.Builder<BufferedImage> thumb = Thumbnails.of(art);
-                double artRatio = (double) art.getWidth() / (double) art.getHeight();
-                double screenRatio = (double) dimension.width / (double) dimension.height;
-                if (artRatio > screenRatio) {
-                    thumb = thumb.height(dimension.height);
-                } else {
-                    thumb = thumb.width(dimension.width);
-                }
-
-                BufferedImage background = thumb.asBufferedImage();
+                BufferedImage background = Utils.cover(art, dimension);
                 graphics.drawImage(background, null, dimension.width / 2 - background.getWidth() / 2, dimension.height / 2 - background.getHeight() / 2);
 
                 graphics.setColor(new Color(0, 0, 0, 0.7F));
@@ -133,7 +124,13 @@ public class Plex implements NowPlayingPlugin<Video> {
         } else {
             //if no content, let's draw the plex logo
 
-            graphics.setColor(Color.BLACK);
+            List<Video> deck = getOnDeck();
+            BufferedImage mosaic = buildMosaic(deck, dimension);
+
+            graphics.drawImage(mosaic, dimension.width / 2 - mosaic.getWidth() / 2, dimension.height / 2 - mosaic.getHeight() / 2, null);
+
+
+            graphics.setColor(new Color(0, 0, 0, 0.5f));
             graphics.fillRect(0, 0, dimension.width, dimension.height);
 
             Dimension fiftyPercent = Utils.getPercentOf(dimension, 50);
@@ -144,6 +141,124 @@ public class Plex implements NowPlayingPlugin<Video> {
             Icon.paint(graphics);
         }
 
+    }
+
+
+    private BufferedImage bestFitMosaic(List<BufferedImage> images, Dimension dimension) throws IOException {
+        int rows = findMosaicRowCount(images, dimension, 1);
+
+
+        int imageHeight = dimension.height / rows;
+
+        BufferedImage image = new BufferedImage(dimension.width, dimension.height, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = image.createGraphics();
+
+        int imageIndex = 0;
+        int y = 0;
+        int maxWwidth = 0;
+        for (int row = 0; row < rows; row++) {
+            int x = 0;
+
+            while (x <= dimension.width && imageIndex < images.size()) {
+                BufferedImage b = Thumbnails.of(images.get(imageIndex)).height(imageHeight).asBufferedImage();
+                g.drawImage(b, x, y, null);
+                x += b.getWidth();
+                maxWwidth = Math.max(maxWwidth, x);
+                imageIndex++;
+            }
+
+            y += imageHeight;
+        }
+        if (maxWwidth < dimension.width) {
+            return image.getSubimage(0, 0, maxWwidth, imageHeight);
+        } else {
+            return image;
+        }
+    }
+
+    private int findMosaicRowCount(List<BufferedImage> images, Dimension dimension, int rows) {
+        int maxImageHeight = dimension.height / rows;
+
+        int currentWidth = 0;
+        int count = 0;
+        int maxCount = 0;
+        int currentRow = 0;
+
+        for (BufferedImage image : images) {
+            double scale = (double) maxImageHeight / (double) image.getHeight();
+            int newWidth = (int) (image.getWidth() * scale);
+            currentWidth += newWidth;
+            count++;
+
+            if (currentWidth >= dimension.width) {
+                maxCount = Math.max(maxCount, count);
+                count = 0;
+                currentWidth = 0;
+                currentRow++;
+
+                if (currentRow > rows) {
+                    //we still have space to put more images
+                    return findMosaicRowCount(images, dimension, ++rows);
+                }
+
+            }
+        }
+
+        if (rows > 1) {
+            return rows - 1;
+        } else {
+            return rows;
+        }
+    }
+
+
+    /**
+     * Builds a single image based on the list of videos
+     *
+     * @param videos
+     * @param dimension
+     * @return
+     */
+    private BufferedImage buildMosaic(List<Video> videos, Dimension dimension) throws IOException {
+        int currentWidth = 0;
+
+        List<BufferedImage> images = new ArrayList<>();
+
+        for (Video video : videos) {
+            BufferedImage b = getVideoThumb(video);
+            b = Thumbnails.of(b).height(dimension.height).asBufferedImage();
+            if (b != null) {
+                images.add(b);
+                currentWidth += b.getWidth();
+            }
+        }
+
+
+        return Utils.cover(bestFitMosaic(images, dimension), dimension);
+
+
+    }
+
+    /**
+     * Gets on deck videos
+     *
+     * @return
+     */
+    private List<Video> getOnDeck() throws UnirestException {
+
+        String toCall = String.format(PLEX_DECK_URL, url, token);
+
+        GetRequest get = Unirest.get(toCall).header(PLEX_HEADER_ACCEPT, PLEX_HEADER_ACCEPT_VALUE);
+        JsonNode response = get.asJson().getBody();
+        logger.info("Response: {}", response);
+
+        PlexSession sessions = PlexResultParser.parseJson(response);
+        if (sessions.getMediaContainer().videos.isEmpty()) {
+            return null;
+        }
+
+
+        return sessions.getMediaContainer().videos;
     }
 
     /**
@@ -193,6 +308,17 @@ public class Plex implements NowPlayingPlugin<Video> {
 
         String artUrl = art.trim().length() > 0 ? String.format(PLEX_ART_URL, url.substring(0, url.length() - 1), art, token) : null;
 
+
+        Map<String, BufferedImage> values = new HashMap<>();
+
+        values.put("art", ImageIO.read(new URL(artUrl)));
+        values.put("thumb", getVideoThumb(video));
+
+        return values;
+    }
+
+
+    private BufferedImage getVideoThumb(Video video) throws IOException {
         String thumbUrl = null;
         if (video.type.equalsIgnoreCase("episode")) {
             String thumb = Optional.ofNullable(video.grandparentThumb)
@@ -225,13 +351,7 @@ public class Plex implements NowPlayingPlugin<Video> {
             thumbUrl = thumb.trim().length() > 0 ? String.format(PLEX_ART_URL, url.substring(0, url.length() - 1), thumb, token) : null;
         }
 
-
-        Map<String, BufferedImage> values = new HashMap<>();
-
-        values.put("art", ImageIO.read(new URL(artUrl)));
-        values.put("thumb", ImageIO.read(new URL(thumbUrl)));
-
-        return values;
+        return ImageIO.read(new URL(thumbUrl));
     }
 
     @Override
@@ -316,6 +436,12 @@ public class Plex implements NowPlayingPlugin<Video> {
     }
 
 
+    /**
+     * Gets the currently playing video if any
+     *
+     * @return
+     * @throws UnirestException
+     */
     public Video getNowPlaying() throws UnirestException {
         String toCall = String.format(PLEX_SESSIONS_URL, url, token);
 

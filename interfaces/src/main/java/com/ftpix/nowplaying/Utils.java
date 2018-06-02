@@ -1,8 +1,11 @@
 package com.ftpix.nowplaying;
 
+import net.coobird.thumbnailator.Thumbnails;
+
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ForkJoinPool;
 
@@ -72,5 +75,26 @@ public class Utils {
         double height = (dimension.getHeight() / 100d) * percent;
 
         return new Dimension((int) width, (int) height);
+    }
+
+    /**
+     * Resize an image to cover the given dimension
+     *
+     * @param image the image to resize
+     * @param dimension the dimension to cover
+     * @return the image resized to covert
+     */
+    public static BufferedImage cover(BufferedImage image, Dimension dimension) throws IOException {
+
+        Thumbnails.Builder<BufferedImage> thumb = Thumbnails.of(image);
+        double artRatio = (double) image.getWidth() / (double) image.getHeight();
+        double screenRatio = (double) dimension.width / (double) dimension.height;
+        if (artRatio > screenRatio) {
+            thumb = thumb.height(dimension.height);
+        } else {
+            thumb = thumb.width(dimension.width);
+        }
+
+        return thumb.asBufferedImage();
     }
 }
