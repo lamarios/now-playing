@@ -125,10 +125,12 @@ public class Plex implements NowPlayingPlugin<Video> {
             //if no content, let's draw the plex logo
 
             List<Video> deck = getOnDeck();
-            BufferedImage mosaic = buildMosaic(deck, dimension);
 
-            graphics.drawImage(mosaic, dimension.width / 2 - mosaic.getWidth() / 2, dimension.height / 2 - mosaic.getHeight() / 2, null);
+            if (deck.size() > 0) {
+                BufferedImage mosaic = buildMosaic(deck, dimension);
 
+                graphics.drawImage(mosaic, dimension.width / 2 - mosaic.getWidth() / 2, dimension.height / 2 - mosaic.getHeight() / 2, null);
+            }
 
             graphics.setColor(new Color(0, 0, 0, 0.5f));
             graphics.fillRect(0, 0, dimension.width, dimension.height);
