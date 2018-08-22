@@ -11,5 +11,5 @@ VOLUME /config
 VOLUME /mnt
 
 
-CMD java -Dconfig.folder=/config -Xmx512M -jar app.jar
+CMD java -Dconfig.folder=/config -Xmx128M -jar app.jar
 

@@ -7,8 +7,10 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="blackscreen" />
+        <module name="default-activity" />
         <module name="defaultactivity" />
         <module name="gtsports" />
+        <module name="harmony-activities" />
         <module name="harmonyactivities" />
         <module name="interfaces" />
         <module name="photo-frame" />
