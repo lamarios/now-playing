@@ -143,3 +143,5 @@ target
 */target
 
 com.ftpix.nowplaying.plugins.Spotify
+/web/src/main/web/.cache/
+/plugins/harmony-activities/target/

@@ -6,6 +6,7 @@ import com.ftpix.nowplaying.WebApp;
 import com.ftpix.nowplaying.activities.Activity;
 import com.ftpix.nowplaying.activities.MediaActivityPlugin;
 import com.ftpix.nowplaying.utils.PluginUtil;
+import com.ftpix.sparknnotation.Sparknotation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.websocket.api.Session;
@@ -19,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import static com.ftpix.nowplaying.WebApp.CONFIG;
 
 @WebSocket
 public class NowPlayingWebSocket {
@@ -82,11 +85,7 @@ public class NowPlayingWebSocket {
     public void timerTask() {
         logger.info("Checking content");
         try {
-            MediaActivityPlugin mediaActivityPlugin = (MediaActivityPlugin) PluginUtil.PLUGIN_INSTANCES.get(WebApp.CONFIG.selectedActivtyPlugin);
-            Activity currentActivity = null;
-            currentActivity = mediaActivityPlugin.getCurrentActivity();
-
-            NowPlayingPlugin nowPlayingPlugin = (NowPlayingPlugin) PluginUtil.PLUGIN_INSTANCES.get(WebApp.CONFIG.activityMapping.get(currentActivity.getId()));
+            NowPlayingPlugin nowPlayingPlugin = Sparknotation.getController(NowPlayingController.class).processFlow(CONFIG.flow);
 
             Object nowPlayingContent = nowPlayingPlugin.getNowPlayingContent();
 

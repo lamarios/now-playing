@@ -14,13 +14,9 @@ public class Config {
     public static final Path CONFIG_FOLDER = Paths.get(System.getProperty("config.folder", "."));
     public static final String CONFIG_NAME = "config.json";
 
-    public String selectedActivtyPlugin = DefaultActivity.DEFAULT_ACTIVITY_PLUGIN_ID;
-    public Map<String, String> activityMapping = new HashMap<>();
     public Map<String, Map<String, String>> pluginSettings = new HashMap<>();
+    public FlowNode flow;
 
-    public Config() {
-        activityMapping.put(DefaultActivity.DEFAULT_ACTIVITY_NAME, Blackscreen.BLACK_SCREEN_PLUGIN_ID);
-    }
 
     public synchronized void save() throws IOException {
 

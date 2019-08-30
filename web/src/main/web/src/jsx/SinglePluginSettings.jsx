@@ -1,5 +1,5 @@
 import React from 'react';
-import NowPlayingService from './NowPlayingService.jsx';
+import {Service} from './NowPlayingService.jsx';
 
 export default class SinglePluginSettings extends React.Component {
     constructor(props) {
@@ -9,7 +9,6 @@ export default class SinglePluginSettings extends React.Component {
 
         this.onSettingChange = this.onSettingChange.bind(this);
         this.saveSettings = this.saveSettings.bind(this);
-        this.service = new NowPlayingService();
     }
 
     componentDidMount() {
@@ -22,9 +21,9 @@ export default class SinglePluginSettings extends React.Component {
         console.log('saving');
         var values = this.state.values;
         values.pluginId = this.props.plugin;
-        this.service.saveSetting(values)
+        Service.saveSetting(values)
             .then(res => {
-                this.setState({errors: res.data});
+                this.setState({errors: res});
             });
     }
 

@@ -1,8 +1,9 @@
 import React from 'react';
 import ActivityPluginSelection from './ActivityPluginSelection.jsx';
 import ActivityList from './ActivityList.jsx';
-import NowPlayingService from './NowPlayingService.jsx'
+import {Service}from './NowPlayingService.jsx'
 import PluginSettings from './PluginSettings.jsx';
+import ActivityFlow from "./activity-flow/ActivityFlow";
 
 export default class Settings extends React.Component {
     constructor() {
@@ -11,16 +12,13 @@ export default class Settings extends React.Component {
         this.state = {
             activities: [],
             nowPlayingPlugins: [],
-            activityMapping: {},
             activityPlugins: [],
             mergedPlugins: []
         };
 
 
-        this.service = new NowPlayingService();
 
         this.refresh = this.refresh.bind(this);
-        this.refreshActivities = this.refreshActivities.bind(this);
         this.mergePlugins = this.mergePlugins.bind(this);
     }
 
@@ -34,33 +32,19 @@ export default class Settings extends React.Component {
      * Refresh the list of activities
      */
     refresh() {
-        this.refreshActivities();
-        this.service.getNowPlayingPlugins()
+        Service.getNowPlayingPlugins()
             .then(nowPlaying => {
-                this.service.getAvailableActivityPlugins()
+                Service.getAvailableActivityPlugins()
                     .then(activities => {
                         this.setState({
-                            activityPlugins: activities.data,
-                            nowPlayingPlugins: nowPlaying.data
+                            activityPlugins: activities,
+                            nowPlayingPlugins: nowPlaying
                         }, () => this.mergePlugins());
                     })
             });
 
-        this.service.getActivityMapping()
-            .then(res => {
-                this.setState({activityMapping: res.data});
-            })
     }
 
-    refreshActivities() {
-        this.setState({activities: []}, () => {
-            this.service.getActivities()
-                .then(res => {
-                    this.setState({activities: res.data});
-                });
-        });
-
-    }
 
     mergePlugins() {
         var merged = [];
@@ -106,6 +90,8 @@ export default class Settings extends React.Component {
                 </div>
 
                 <h2>Settings</h2>
+                <ActivityFlow />
+{/*
                 <ActivityPluginSelection onActivityChange={() => this.refresh()} plugins={this.state.activityPlugins}/>
                 <ActivityList
                     activities={this.state.activities}
@@ -119,6 +105,7 @@ export default class Settings extends React.Component {
 
                     }}
                 />
+*/}
                 <PluginSettings plugins={this.state.mergedPlugins}/>
 
             </div>

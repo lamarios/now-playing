@@ -4,6 +4,8 @@ import com.ftpix.nowplaying.NowPlayingPlugin;
 import com.ftpix.nowplaying.Setting;
 import com.ftpix.nowplaying.SettingType;
 import com.ftpix.nowplaying.Utils;
+import com.ftpix.nowplaying.activities.Activity;
+import com.ftpix.nowplaying.activities.MediaActivityPlugin;
 import com.ftpix.plugin.plex.model.PlexSession;
 import com.ftpix.plugin.plex.model.Video;
 import com.mashape.unirest.http.JsonNode;
@@ -22,7 +24,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.List;
 
-public class Plex implements NowPlayingPlugin<Video> {
+public class Plex implements NowPlayingPlugin<Video>, MediaActivityPlugin {
 
     private static final String PLEX_SESSIONS_URL = "%sstatus/sessions?X-Plex-Token=%s",
             PLEX_DECK_URL = "%slibrary/onDeck?X-Plex-Token=%s",
@@ -460,5 +462,38 @@ public class Plex implements NowPlayingPlugin<Video> {
                 .findFirst()
                 .orElse(sessions.getMediaContainer().videos.get(0));
 
+    }
+
+    @Override
+    public List<Activity> getActivities() throws Exception {
+        Activity activity = new Activity();
+        activity.setName("Playing");
+        activity.setId("playing");
+
+        Activity activity2 = new Activity();
+        activity2.setName("Stopped");
+        activity2.setId("stopped");
+        return List.of(activity, activity2);
+    }
+
+    @Override
+    public Activity getCurrentActivity() throws Exception {
+        Activity playing = new Activity();
+        playing.setName("Playing");
+        playing.setId("playing");
+
+        Activity notPlaying = new Activity();
+        notPlaying.setName("Stopped");
+        notPlaying.setId("stopped");
+        try {
+            Video nowPlaying = getNowPlaying();
+            if (nowPlaying != null) {
+                return playing;
+            }
+        } catch (Exception e) {
+            logger.error("Couldn't get plex now playing:", e);
+        }
+
+        return notPlaying;
     }
 }

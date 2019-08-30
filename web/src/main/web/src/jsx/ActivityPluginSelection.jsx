@@ -1,5 +1,5 @@
 import React from 'react';
-import NowPlayingService from './NowPlayingService.jsx';
+import {Service} from './NowPlayingService.jsx';
 
 export default class ActivityPluginSelection extends React.Component {
 
@@ -8,7 +8,6 @@ export default class ActivityPluginSelection extends React.Component {
 
         this.state = {selected: ''};
 
-        this.service = new NowPlayingService();
         this.refresh = this.refresh.bind(this);
         this.activityChanged = this.activityChanged.bind(this);
     }
@@ -21,8 +20,10 @@ export default class ActivityPluginSelection extends React.Component {
      * REfreshes the available data
      */
     refresh() {
-        this.service.getCurrentActivityPlugin()
-            .then(current => this.setState({selected: current.data}));
+        Service.getCurrentActivityPlugin()
+            .then(current =>{
+                this.setState({selected: current});
+            });
     }
 
 
@@ -32,7 +33,7 @@ export default class ActivityPluginSelection extends React.Component {
      */
     activityChanged(event) {
         this.setState({selected: event.target.value}, () => {
-            this.service.setActivityPlugin(this.state.selected)
+            Service.setActivityPlugin(this.state.selected)
                 .then(res => {
                     this.props.onActivityChange();
                 });

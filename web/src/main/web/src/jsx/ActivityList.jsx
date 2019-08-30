@@ -1,11 +1,10 @@
 import React from 'react';
-import NowPlayingService from './NowPlayingService.jsx'
+import  {Service} from  './NowPlayingService.jsx'
+
 
 export default class ActivityList extends React.Component {
     constructor(props) {
         super(props);
-
-        this.service = new NowPlayingService();
         this.saveMapping = this.saveMapping.bind(this);
     }
 
@@ -17,7 +16,7 @@ export default class ActivityList extends React.Component {
         var activity = event.target.name;
         var plugin = event.target.value;
         this.props.onMappingChanged(activity, plugin);
-        this.service.setMapping(activity, plugin);
+        Service.setMapping(activity, plugin);
     }
 
     render() {

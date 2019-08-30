@@ -1,69 +1,108 @@
-import axios from 'axios';
 import querystring from 'querystring';
 
-export default class NowPlayingService {
+export const API_URL = "api";
+export const API = {
+    ACTIVITIES: {
+        GET_AVAILABLE_PLUGINS: API_URL + "/activities/get-available-plugins",
+        SET_ACTIVITY_PLUGIN: API_URL + "/activities/set",
+        GET_ACTIVITIES: API_URL + "/activities/get-activities"
+    },
+    NOW_PLAYING: {
+        GET_AVAILABLE_PLUGINS: API_URL + "/now-playing/get-available-plugins",
+        GET_IMAGE: "/now-playing.jpg?width={0}&height={1}&scale={2}"
+    },
+    FLOW: {
+        SAVE_FLOW: API_URL + "/flow",
+        GET_FLOW: API_URL + "/flow"
+    },
+    SETTINGS: {
+        SAVE: API_URL + "/settings/save",
+    }
+};
+
+class NowPlayingService {
 
     /**
      * Gets the available activity plugins
-     * @returns {AxiosPromise}
+     * @returns {Promise}
      */
     getAvailableActivityPlugins() {
-        return axios.get(API.ACTIVITIES.GET_AVAILABLE_PLUGINS);
+        return fetch(API.ACTIVITIES.GET_AVAILABLE_PLUGINS).then(r => r.json());
     }
 
 
-    /**
-     * Gets the currently selected plugin
-     * @returns {AxiosPromise}
-     */
-    getCurrentActivityPlugin() {
-        return axios.get(API.ACTIVITIES.GET_CURRENT_PLUGIN);
-    }
 
     /**
      * Saves the new activity plugin
      * @param pluginId
-     * @returns {AxiosPromise}
+     * @returns {Promise}
      */
     setActivityPlugin(pluginId) {
-        return axios.post(API.ACTIVITIES.SET_ACTIVITY_PLUGIN, querystring.stringify({plugin: pluginId}));
+        return fetch(API.ACTIVITIES.SET_ACTIVITY_PLUGIN, {
+            method: 'POST',
+            body: new URLSearchParams({plugin: pluginId})
+        }).then(r => r.json());
     }
 
     /**
-     * GEts the list of activities for the currently selected activity plugin
-      * @returns {AxiosPromise}
+     * GEts the list of activities for a given activity plugin
+     * @returns {Promise}
      */
-    getActivities(){
-        return axios.get(API.ACTIVITIES.GET_ACTIVITIES);
+    getActivitiesForPlugin(pluginId) {
+        return fetch(API.ACTIVITIES.GET_ACTIVITIES + "/" + pluginId).then(r => r.json());
     }
 
-    /**
-     * gets the mapping activity / nowplaying plugin
-     * @returns {AxiosPromise}
-     */
-    getActivityMapping(){
-        return axios.get(API.ACTIVITIES.GET_MAPPING);
-    }
 
-    setMapping(activity, plugin){
-        return axios.post(API.ACTIVITIES.SET_MAPPING, querystring.stringify({activity: activity, pluginId: plugin}))
+    setMapping(activity, plugin) {
+        return fetch(API.ACTIVITIES.SET_MAPPING, {
+            method: 'POST', body:
+                new URLSearchParams({
+                    activity: activity,
+                    pluginId: plugin
+                })
+        }).then(r => r.json())
     }
 
     /**
      * Gets the available now playing plugins
-     * @returns {AxiosPromise}
+     * @returns {Promise}
      */
-    getNowPlayingPlugins(){
-        return axios.get(API.NOW_PLAYING.GET_AVAILABLE_PLUGINS);
+    getNowPlayingPlugins() {
+        return fetch(API.NOW_PLAYING.GET_AVAILABLE_PLUGINS).then(r => r.json());
     }
 
     /**
      * Saves the settings for a single plugin
      * @param settings
-     * @returns {AxiosPromise}
+     * @returns {Promise}
      */
-    saveSetting(settings){
-        return axios.post(API.SETTINGS.SAVE, querystring.stringify(settings));
+    saveSetting(settings) {
+
+        return fetch(API.SETTINGS.SAVE, {method: 'post', body: new URLSearchParams(settings)}).then(r => r.json());
+    }
+
+
+    /**
+     *  saves the flow of now playing
+     */
+    saveFlow(flow) {
+        return fetch(API.FLOW.SAVE_FLOW, {
+            method: 'post',
+            body: JSON.stringify(flow),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+    }
+
+    /**
+     * GEts the current flow
+     * @returns {Promise<any>}
+     */
+    getFlow(){
+        return fetch(API.FLOW.GET_FLOW).then(r => r.json());
     }
 
 }
+
+export const Service = new NowPlayingService();

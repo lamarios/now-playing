@@ -5,7 +5,7 @@ import Settings from './Settings.jsx';
 import NowPlaying from './NowPlaying.jsx';
 
 
-let images = require.context("../images/", true, /^\.\/.*\.(png|gif|svg)/);
+// let images = require.context("../images/", true, /^\.\/.*\.(png|gif|svg)/);
 
 
 String.prototype.format = function () {

@@ -1,5 +1,6 @@
 import React from 'react';
 
+import {API} from './NowPlayingService';
 
 export default class NowPlaying extends React.Component {
     constructor() {

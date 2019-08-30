@@ -70,7 +70,7 @@ public class WebApp {
 
         if (System.getProperty("dev", "false").equalsIgnoreCase("true")) {
             logger.info("DEV MODE");
-            Spark.externalStaticFileLocation("/home/gz/IdeaProjects/now-playing/web/src/main/resources/web/public");
+            Spark.externalStaticFileLocation("web/src/main/resources/web/public");
 
         } else {
             Spark.staticFiles.location("/web/public");

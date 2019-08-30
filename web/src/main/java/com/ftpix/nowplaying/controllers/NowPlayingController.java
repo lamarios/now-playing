@@ -3,10 +3,12 @@ package com.ftpix.nowplaying.controllers;
 
 import com.ftpix.nowplaying.NowPlayingPlugin;
 import com.ftpix.nowplaying.Pair;
+import com.ftpix.nowplaying.Plugin;
 import com.ftpix.nowplaying.WebApp;
 import com.ftpix.nowplaying.activities.Activity;
 import com.ftpix.nowplaying.activities.MediaActivityPlugin;
-import com.ftpix.nowplaying.models.CacheEntry;
+import com.ftpix.nowplaying.models.*;
+import com.ftpix.nowplaying.plugins.Blackscreen;
 import com.ftpix.nowplaying.transformers.GsonTransformer;
 import com.ftpix.nowplaying.utils.PluginUtil;
 import com.ftpix.sparknnotation.annotations.SparkController;
@@ -15,6 +17,7 @@ import com.ftpix.sparknnotation.annotations.SparkQueryParam;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import spark.Request;
 import spark.Response;
 
 import javax.imageio.ImageIO;
@@ -30,19 +33,18 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.ftpix.nowplaying.WebApp.*;
 
 @SparkController()
 public class NowPlayingController {
     private final Logger logger = LogManager.getLogger();
 
     public final static Dimension FULL_HD = new Dimension(1920, 1080);
-    private final Map<String, CacheEntry> imageCache = new ConcurrentHashMap<>();
-    private ExecutorService cacheCleaner = Executors.newSingleThreadExecutor();
 
-    public NowPlayingController() {
-        clearCache();
-    }
+    private static ThreadLocal<Request> SERVER_REQUEST = new ThreadLocal<>();
 
     /**
      * Gets the list of available  plugins
@@ -70,7 +72,8 @@ public class NowPlayingController {
      * @return
      */
     @SparkGet("/now-playing.jpg")
-    public Object nowPlaying(@SparkQueryParam("width") Integer width, @SparkQueryParam("height") Integer height, @SparkQueryParam("scale") Double scale, Response res) throws Exception {
+    public Object nowPlaying(@SparkQueryParam("width") Integer width, @SparkQueryParam("height") Integer height, @SparkQueryParam("scale") Double scale, Response res, Request request) throws Exception {
+        SERVER_REQUEST.set(request);
 
         Dimension dimension = FULL_HD;
         if (width != null && height != null) {
@@ -79,26 +82,8 @@ public class NowPlayingController {
 
         scale = Optional.ofNullable(scale).orElse(1D);
         logger.info("Getting now playing for dimension:{} and scale {}", dimension, scale);
-        byte[] toUse;
 
-        String cacheIndex = dimensionsToString(dimension, scale);
-        if (imageCache.containsKey(cacheIndex)) {
-            CacheEntry cacheEntry = imageCache.get(cacheIndex);
-            long timeDiff = Math.abs(ChronoUnit.SECONDS.between(cacheEntry.time, LocalDateTime.now()));
-            logger.info("Time diff with cache = {}", timeDiff);
-            if (timeDiff <= 5) {
-                logger.info("Using cache instead");
-                res.raw().getOutputStream().write(cacheEntry.getImage());
-
-                return res.raw();
-            } else {
-                toUse = getContent(dimension, scale);
-            }
-
-
-        } else {
-            toUse = getContent(dimension, scale);
-        }
+        byte[] toUse = getContent(dimension, scale);
 
 
         res.raw().setContentType("application/octet-stream");
@@ -107,6 +92,108 @@ public class NowPlayingController {
 
         res.raw().getOutputStream().write(toUse);
         return res.raw();
+
+
+    }
+
+
+    private NowPlayingPlugin getDefaultNowPlaying() {
+        return (NowPlayingPlugin) PluginUtil.PLUGIN_INSTANCES.get(Blackscreen.BLACK_SCREEN_PLUGIN_ID);
+    }
+
+    /**
+     * Gets the current activty based on the given flow
+     *
+     * @param node
+     * @return
+     */
+    public NowPlayingPlugin processFlow(FlowNode node) throws Exception {
+
+        logger.info("Processing flow node: {}", node);
+        if (node == null) {
+            logger.info("node is null");
+            return getDefaultNowPlaying();
+        }
+        ActivityNode activity = node.getActivity();
+        RequestFlowNode request = node.getRequest();
+        String nowPlaying = node.getNowPlaying();
+
+        if (activity == null && nowPlaying == null && request == null) {
+            logger.info("node doesn't have options");
+            return getDefaultNowPlaying();
+        }
+
+        if (nowPlaying != null) {
+            logger.info("nowPlaying node");
+            return (NowPlayingPlugin) PluginUtil.PLUGIN_INSTANCES.get(nowPlaying);
+        }
+
+        if (activity != null) {
+            logger.info("activity node");
+            if (activity.getNodes() == null || activity.getNodes().size() == 0) {
+                logger.info("activity nodes are either null or empty");
+                return getDefaultNowPlaying();
+            }
+            //finding the current activity
+            MediaActivityPlugin plugin = (MediaActivityPlugin) PluginUtil.PLUGIN_INSTANCES.get(activity.getPlugin());
+            String currentActivity = plugin.getCurrentActivity().getId();
+
+            return Optional.ofNullable(currentActivity)
+                    .filter(a -> activity.getNodes().containsKey(a))
+                    .map(a -> activity.getNodes().get(a))
+                    .filter(Objects::nonNull)
+                    .map(n -> {
+                        try {
+                            return processFlow(n);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .orElseGet(this::getDefaultNowPlaying);
+
+        }
+
+
+        if (request != null) {
+            logger.info("request node");
+            RequestFlowNodeOption requestOption = getRequestOption(request, SERVER_REQUEST.get());
+            if (requestOption != null) {
+                return processFlow(requestOption.getValue());
+            } else {
+                return getDefaultNowPlaying();
+            }
+        }
+
+
+        return getDefaultNowPlaying();
+    }
+
+    private RequestFlowNodeOption getRequestOption(RequestFlowNode node, Request request) {
+
+        //get an option by name or else get teh default one
+        Function<String, Optional<RequestFlowNodeOption>> getForName = s -> node.getOptions().stream()
+                .filter(o -> o.getName().equalsIgnoreCase(s))
+                .findFirst();
+
+        String value = null;
+        if (request != null) {
+            switch (node.getType()) {
+                case "queryParam":
+                    value = request.queryParams(node.getName());
+                    break;
+                default:
+                    value = "default";
+            }
+        }
+
+
+        if (value == null) {
+            value = "default";
+        }
+
+        return Optional.ofNullable(value)
+                .flatMap(getForName)
+                .orElse(null);
 
 
     }
@@ -123,51 +210,35 @@ public class NowPlayingController {
         String cacheIndex = dimensionsToString(dimension, scale);
 
         try {
-            MediaActivityPlugin mediaActivityPlugin = (MediaActivityPlugin) PluginUtil.PLUGIN_INSTANCES.get(WebApp.CONFIG.selectedActivtyPlugin);
-            Activity currentActivity = mediaActivityPlugin.getCurrentActivity();
 
-            NowPlayingPlugin nowPlayingPlugin = (NowPlayingPlugin) PluginUtil.PLUGIN_INSTANCES.get(WebApp.CONFIG.activityMapping.get(currentActivity.getId()));
+            NowPlayingPlugin nowPlayingPlugin = processFlow(CONFIG.flow);
 
             Object nowPlayingContent = nowPlayingPlugin.getNowPlayingContent();
 
             //checking cache, if the object is equal we can skip the image creation
-            if (imageCache.containsKey(cacheIndex) && imageCache.get(cacheIndex).getContent() != null && imageCache.get(cacheIndex).getContent().equals(nowPlayingContent)) {
-                logger.info("Skipping image rebuilding, getting from cache instead");
-                imageCache.get(cacheIndex).time = LocalDateTime.now();
-                return imageCache.get(cacheIndex).getImage();
-            } else {
-                BufferedImage b = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_3BYTE_BGR);
+            BufferedImage b = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_3BYTE_BGR);
 //                BufferedImage b = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
-                Graphics2D g = b.createGraphics();
-                try {
-                    RenderingHints rh = new RenderingHints(
-                            RenderingHints.KEY_TEXT_ANTIALIASING,
-                            RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                    g.setRenderingHints(rh);
+            Graphics2D g = b.createGraphics();
+            try {
+                RenderingHints rh = new RenderingHints(
+                        RenderingHints.KEY_TEXT_ANTIALIASING,
+                        RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                g.setRenderingHints(rh);
 
 
-                    logger.info("Generating new image for Activity: [{}], and plugin:[{}]", currentActivity.getName(), nowPlayingPlugin.getName());
+                logger.info("Generating new image for plugin:[{}]", nowPlayingPlugin.getName());
 
-                    long now = System.currentTimeMillis();
-                    nowPlayingPlugin.getNowPlayingImage(nowPlayingContent, g, scaledDimension, scale);
+                long now = System.currentTimeMillis();
+                nowPlayingPlugin.getNowPlayingImage(nowPlayingContent, g, scaledDimension, scale);
 
 
-                    logger.info("Plugin {} created image in {}ms", nowPlayingPlugin.getName(), System.currentTimeMillis() - now);
+                logger.info("Plugin {} created image in {}ms", nowPlayingPlugin.getName(), System.currentTimeMillis() - now);
 
-                    byte[] bytes = bufferedImagetoBytes(b);
+                byte[] bytes = bufferedImagetoBytes(b);
 
-                    if (nowPlayingContent != null) {
-                        CacheEntry cacheEntry = new CacheEntry();
-                        cacheEntry.time = LocalDateTime.now();
-                        cacheEntry.content = nowPlayingContent;
-                        cacheEntry.image = bytes;
-                        imageCache.put(cacheIndex, cacheEntry);
-                    }
-
-                    return bytes;
-                } finally {
-                    g.dispose();
-                }
+                return bytes;
+            } finally {
+                g.dispose();
             }
 
         } catch (Exception e) {
@@ -222,33 +293,4 @@ public class NowPlayingController {
         return d.width + "x" + d.height + "x" + scale;
     }
 
-    private void clearCache() {
-        cacheCleaner.execute(() -> {
-            while (true) {
-                logger.info("Clearing image cache");
-                LocalDateTime now = LocalDateTime.now();
-
-                imageCache.keySet()
-                        .stream()
-                        .filter(k -> {
-                            long diff = Math.abs(ChronoUnit.SECONDS.between(now, imageCache.get(k).time));
-                            return diff > 30;
-                        })
-                        .forEach(k -> {
-                            logger.info("Removing from cache {}", k);
-                            imageCache.remove(k);
-                        });
-
-
-                logger.info("new cache size:{}", imageCache.size());
-
-                try {
-                    Thread.sleep(30000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-    }
 }
