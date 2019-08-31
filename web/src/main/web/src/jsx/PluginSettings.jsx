@@ -16,7 +16,7 @@ export default class PluginSettings extends React.Component {
                 if (p.settings != undefined && p.settings.length > 0) {
                     return (<div key={p.id} className='settings'>
                         <h3>{p.name}</h3>
-                        <p>Can be used as: {p.tags}</p>
+                        <p>Can be used as: {p.tags && p.tags.map(t => <span className={"tag "+t} key={t}>{t}</span>)}</p>
                         <SinglePluginSettings settings={p.settings} plugin={p.id} values={p.settingsValues}/>
                         {p.loginHtml !== undefined && <div className="extnal-login">
                             <h4>External login link</h4>

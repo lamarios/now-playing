@@ -1,0 +1,54 @@
+.RequestNode {
+  .inputs {
+    display: inline-block;
+    padding: 5px;
+    border-left: @flowBorder;
+    border-bottom: @flowBorder;
+    border-radius: @borderRadius;
+  }
+
+  .options {
+    border-left: @flowBorder;
+    margin: 10px 50px;
+    padding-left: 10px;
+    position: relative;
+    border-radius: @borderRadius;
+
+    display: table;
+
+    &:before {
+      display: block;
+      content: "";
+      position: absolute;
+      border-left: @flowBorder;
+      border-bottom: @flowBorder;
+      border-bottom-left-radius: @borderRadius;
+      width: 20px;
+      height: 30%;
+      left: -21px;
+      top: -10px;
+    }
+
+    .option {
+      display: table-row;
+
+
+      .delete {
+        display: inline-block;
+        margin-right: 5px;
+        cursor: pointer;
+        transition: all 0.5s ease-in-out;
+        transform-origin: center;
+
+        &:hover {
+          color: red;
+          transform: scale(1.2);
+        }
+      }
+
+      .option-name, .Node {
+        display: table-cell;
+      }
+    }
+  }
+}

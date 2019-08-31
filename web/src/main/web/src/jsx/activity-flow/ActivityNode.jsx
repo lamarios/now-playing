@@ -45,7 +45,7 @@ export default class ActivityNode extends React.Component {
 
     activityChanged = (activtyId, childNodeValue) => {
         let node = this.getNode();
-        console.log('activity changed',node, activtyId, childNodeValue);
+        console.log('activity changed', node, activtyId, childNodeValue);
         node.nodes[activtyId] = childNodeValue;
 
         this.props.valueChanged(node);
@@ -57,14 +57,17 @@ export default class ActivityNode extends React.Component {
         const node = this.getNode();
 
         return (<div className="ActivityNode">
-            {activities && activities.map(a => {
-                const activityNode =  node.nodes[a.id];
-                return <div key={a.id}>
-                    {a.name}: <Node activities={this.props.activities} nowPlaying={this.props.nowPlaying}
-                                    valueChanged={(nodeValue) => this.activityChanged(a.id, nodeValue)}
-                                    node={activityNode}/>
-                </div>
-            })}
+            <div className="activities">
+                {activities && activities.map(a => {
+                    const activityNode = node.nodes[a.id];
+                    return <div className="activity" key={a.id}>
+                        <span className={"activity-name"}>{a.name}:</span> <Node activities={this.props.activities}
+                                                     nowPlaying={this.props.nowPlaying}
+                                                     valueChanged={(nodeValue) => this.activityChanged(a.id, nodeValue)}
+                                                     node={activityNode}/>
+                    </div>
+                })}
+            </div>
         </div>);
     }
 }

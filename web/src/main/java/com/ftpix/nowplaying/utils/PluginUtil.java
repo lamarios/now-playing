@@ -50,14 +50,14 @@ public class PluginUtil {
         }
 
         if (p instanceof NowPlayingPlugin) {
-            tags.add("Now Playing");
+            tags.add("Display");
         }
 
         if (p instanceof ExternalLoginPlugin) {
             plugin.put("loginHtml", (((ExternalLoginPlugin) p).getLoginLinkHtml()));
         }
 
-        plugin.put("tags", Strings.join(tags, ','));
+        plugin.put("tags", tags);
         plugin.put("settings", p.getSettings());
 
 

@@ -311,7 +311,7 @@ public class Spotify implements NowPlayingPlugin<SpotifyNowPlaying>, MediaActivi
     private SpotifyToken loadToken() {
         try {
             Path tokenFile = getDataFolder().resolve("token.json");
-            String json = Files.readAllLines(tokenFile).stream().collect(Collectors.joining(","));
+            String json = Files.readAllLines(tokenFile).stream().collect(Collectors.joining(""));
             SpotifyToken spotifyToken = gson.fromJson(json, SpotifyToken.class);
             loggedIn = true;
             return spotifyToken;

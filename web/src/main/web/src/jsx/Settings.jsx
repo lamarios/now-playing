@@ -89,7 +89,9 @@ export default class Settings extends React.Component {
                     </ul>
                 </div>
 
-                <h2>Settings</h2>
+                <h2>Flow</h2>
+
+                <p>Here you can set up the flow on how the image should show on your clients</p>
                 <ActivityFlow />
 {/*
                 <ActivityPluginSelection onActivityChange={() => this.refresh()} plugins={this.state.activityPlugins}/>

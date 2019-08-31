@@ -22,7 +22,7 @@ export default class RequestNode extends React.Component {
             node = {
                 name: '',
                 type: 'queryParam',
-                options: [{name:'default'}],
+                options: [{name: 'default'}],
             }
         }
 
@@ -76,7 +76,6 @@ export default class RequestNode extends React.Component {
         this.props.valueChanged(node);
 
 
-
     }
 
     addOption = () => {
@@ -100,23 +99,46 @@ export default class RequestNode extends React.Component {
         }
     }
 
+    deleteOption = (option) => {
+        let node = this.getNode();
+        const optionIndex = node.options.findIndex((o) => o.name === option.name);
+
+        if (optionIndex !== -1) {
+                node.options.splice(optionIndex,1);
+        }
+
+
+        this.props.valueChanged(node);
+
+    };
+
     render() {
         const node = this.getNode();
         return (<div className="RequestNode">
-            <div>
-                <label>Query param name:</label>
-                <input type="text" value={node.name} onChange={this.nameChange}/>
+            <div className="inputs">
+                <div>
+                    <label>Query param name:</label>
+                    <input type="text" value={node.name} onChange={this.nameChange}/>
+                </div>
+                <div>
+                    <label>Add option:</label>
+                    <input type="text" value={this.state.addInput} onChange={this.addInputChange}/>
+                    <button onClick={this.addOption}>Add</button>
+                </div>
             </div>
-            <div>
-                <label>Add option:</label>
-                <input type="text" value={this.state.addInput} onChange={this.addInputChange}/>
-                <button onClick={this.addOption}>Add</button>
+            <div className="options">
+                {node.options.map(o => <div class="option" key={o.name}>
+                    <span className="option-name">
+                        {o.name !== 'default' &&
+                        <i className="delete fas fa-minus-circle" onClick={() => this.deleteOption(o)}></i>}
+                        {o.name}:
+                    </span>
+                    <Node activities={this.props.activities}
+                          nowPlaying={this.props.nowPlaying}
+                          node={o.value}
+                          valueChanged={(node) => this.optionChanged(o, node)}/>
+                </div>)}
             </div>
-            {node.options.map(o => <div key={o.name}>
-                {o.name}: <Node activities={this.props.activities} nowPlaying={this.props.nowPlaying}
-                                node={o.value}
-                                valueChanged={(node) => this.optionChanged(o, node)}/>
-            </div>)}
 
         </div>);
     }

@@ -6,18 +6,18 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="blackscreen" />
-        <module name="default-activity" />
-        <module name="defaultactivity" />
-        <module name="gtsports" />
-        <module name="harmony-activities" />
-        <module name="harmonyactivities" />
+        <module name="spotify" />
         <module name="interfaces" />
         <module name="photo-frame" />
-        <module name="plex" />
-        <module name="spotify" />
-        <module name="web" />
         <module name="yamaha" />
+        <module name="default-activity" />
+        <module name="plex" />
+        <module name="web" />
+        <module name="blackscreen" />
+        <module name="harmony-activities" />
+        <module name="defaultactivity" />
+        <module name="gtsports" />
+        <module name="harmonyactivities" />
       </profile>
     </annotationProcessing>
   </component>
