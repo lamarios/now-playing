@@ -18,6 +18,7 @@
         <module>spotify</module>
         <module>photo-frame</module>
         <module>plex</module>
+        <module>jellyfin</module>
         <module>yamaha</module>
         <module>gtsports</module>
     </modules>

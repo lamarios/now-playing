@@ -14,6 +14,7 @@ import com.ftpix.nowplaying.plugins.Yamaha;
 import com.ftpix.nowplaying.plugins.defaultactivity.DefaultActivity;
 import com.ftpix.nowplaying.plugins.gtsports.GTSportRaces;
 import com.ftpix.nowplaying.plugins.gtsports.GTSportsPlugin;
+import com.ftpix.plugin.jellyfin.Jellyfin;
 import com.ftpix.plugin.plex.Plex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,8 +33,8 @@ import static com.ftpix.nowplaying.WebApp.*;
 
 public class PluginUtil {
 
-    public final static List<Class<? extends MediaActivityPlugin>> ACTIVITY_PLUGINS = List.of(HarmonyPlugin.class, DefaultActivity.class, Spotify.class, Yamaha.class, Plex.class);
-    public final static List<Class<? extends NowPlayingPlugin>> NOWPLAYING_PLUGINS = List.of(Blackscreen.class, Spotify.class, PhotoFrame.class, Plex.class, GTSportsPlugin.class);
+    public final static List<Class<? extends MediaActivityPlugin>> ACTIVITY_PLUGINS = List.of(HarmonyPlugin.class, DefaultActivity.class, Spotify.class, Yamaha.class, Plex.class, Jellyfin.class);
+    public final static List<Class<? extends NowPlayingPlugin>> NOWPLAYING_PLUGINS = List.of(Blackscreen.class, Spotify.class, PhotoFrame.class, Plex.class, GTSportsPlugin.class, Jellyfin.class);
     public final static List<Class<? extends Plugin>> ALL_PLUGINS = Stream.concat(ACTIVITY_PLUGINS.stream(), NOWPLAYING_PLUGINS.stream()).distinct().collect(Collectors.toList());
     public final static Map<String, ? extends Plugin> PLUGIN_INSTANCES;
     private static final Logger logger = LogManager.getLogger();
