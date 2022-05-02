@@ -1,6 +1,6 @@
 import querystring from 'querystring';
 
-export const API_URL = "http://localhost:4567/api";
+export const API_URL = "/api";
 export const API = {
     ACTIVITIES: {
         GET_AVAILABLE_PLUGINS: API_URL + "/activities/get-available-plugins",

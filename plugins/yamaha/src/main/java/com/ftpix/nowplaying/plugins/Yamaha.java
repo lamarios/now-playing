@@ -126,6 +126,22 @@ public class Yamaha implements MediaActivityPlugin {
             }
         }
 
+        NodeList features = doc.getElementsByTagName("Feature_Existence");
+        if (features.getLength() == 1) {
+            NodeList inputs = features.item(0).getChildNodes();
+            for (int i = 0; i < inputs.getLength(); i++) {
+                Node item = inputs.item(i);
+                String nodeName = item.getNodeName();
+                String content = item.getTextContent();
+                if (item.getTextContent().equalsIgnoreCase("1")) {
+                    Activity a = new Activity();
+                    a.setName(nodeName);
+                    a.setId(nodeName);
+                    activities.add(a);
+                }
+            }
+        }
+
         return activities;
     }
 
