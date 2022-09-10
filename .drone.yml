@@ -88,7 +88,7 @@ steps:
     settings:
       api_key:
         from_secret: github_token
-      files: web/target/now-playing-*.jar
+      files: web/target/web-*.jar
     when:
       event: tag
 trigger:
