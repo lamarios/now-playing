@@ -12,7 +12,7 @@ steps:
       restore: true
       mount:
         - ./m2
-        - ./src/main/web/node_modules
+        - ./web/src/main/web/node_modules
 
   - name: build web
     image: node
@@ -46,8 +46,7 @@ steps:
       rebuild: true
       mount:
         - ./m2
-        - ./src/main/web/node_modules
-
+        - ./web/src/main/web/node_modules
 
   - name: publish new version
     image: plugins/docker
