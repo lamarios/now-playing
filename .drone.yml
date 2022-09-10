@@ -19,7 +19,7 @@ steps:
     pull: always
     commands:
       - id
-      - cd web/src/main/app
+      - cd web/src/main/web
       - npm install
       - npm run build
 
