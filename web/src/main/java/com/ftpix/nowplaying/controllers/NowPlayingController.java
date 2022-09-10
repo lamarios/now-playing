@@ -11,10 +11,12 @@ import com.ftpix.nowplaying.models.*;
 import com.ftpix.nowplaying.plugins.Blackscreen;
 import com.ftpix.nowplaying.transformers.GsonTransformer;
 import com.ftpix.nowplaying.utils.PluginUtil;
+import com.ftpix.nowplaying.utils.RotateImage;
 import com.ftpix.sparknnotation.annotations.SparkController;
 import com.ftpix.sparknnotation.annotations.SparkGet;
 import com.ftpix.sparknnotation.annotations.SparkQueryParam;
 
+import net.coobird.thumbnailator.filters.Rotation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import spark.Request;
@@ -22,6 +24,7 @@ import spark.Response;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Files;
@@ -72,7 +75,7 @@ public class NowPlayingController {
      * @return
      */
     @SparkGet("/now-playing.jpg")
-    public Object nowPlaying(@SparkQueryParam("width") Integer width, @SparkQueryParam("height") Integer height, @SparkQueryParam("scale") Double scale, Response res, Request request) throws Exception {
+    public Object nowPlaying(@SparkQueryParam("width") Integer width, @SparkQueryParam("height") Integer height, @SparkQueryParam("scale") Double scale, @SparkQueryParam("rotate") String rotate, Response res, Request request) throws Exception {
         SERVER_REQUEST.set(request);
 
         Dimension dimension = FULL_HD;
@@ -83,11 +86,11 @@ public class NowPlayingController {
         scale = Optional.ofNullable(scale).orElse(1D);
         logger.info("Getting now playing for dimension:{} and scale {}", dimension, scale);
 
-        byte[] toUse = getContent(dimension, scale);
+        byte[] toUse = getContent(dimension, scale, rotate != null && rotate.trim().length() > 0 ? RotateImage.Direction.valueOf(rotate.toUpperCase()) : null);
 
 
         res.raw().setContentType("application/octet-stream");
-        res.raw().setHeader("Content-Disposition", "inline; filename=now-playing-" + dimension.width + "x" + dimension.height + "x" + scale + ".jpg");
+        res.raw().setHeader("Content-Disposition", "inline; filename=now-playing-" + dimension.width + "x" + dimension.height + "x" + scale + "r" + rotate + ".jpg");
 
 
         res.raw().getOutputStream().write(toUse);
@@ -199,7 +202,7 @@ public class NowPlayingController {
     }
 
 
-    private byte[] getContent(Dimension dimension, double scale) throws Exception {
+    private byte[] getContent(Dimension dimension, double scale, RotateImage.Direction direction) throws Exception {
 
 
         int scaledWidth = (int) ((double) dimension.width * scale);
@@ -233,6 +236,13 @@ public class NowPlayingController {
 
 
                 logger.info("Plugin {} created image in {}ms", nowPlayingPlugin.getName(), System.currentTimeMillis() - now);
+
+                if (direction != null) {
+                    b = RotateImage.rotateImage(b, direction);
+                    logger.info("Picture rotated by {} degrees, new width: {}px height: {}px", direction, b.getWidth(), b.getHeight());
+                    ImageIO.write(b, "jpg", new File("./test.jpg"));
+                }
+
 
                 byte[] bytes = bufferedImagetoBytes(b);
 
