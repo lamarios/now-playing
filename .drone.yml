@@ -1,0 +1,103 @@
+kind: pipeline
+type: docker
+name: Backend & web
+
+steps:
+  - name: restore-cache
+    image: drillster/drone-volume-cache
+    volumes:
+      - name: cache
+        path: /cache
+    settings:
+      restore: true
+      mount:
+        - ./m2
+        - ./src/main/web/node_modules
+
+  - name: build web
+    image: node
+    pull: always
+    commands:
+      - id
+      - cd web/src/main/app
+      - npm install
+      - npm run build
+
+  ## setting maven version if it's a new release
+  - name: set version
+    image: maven:3.8-openjdk-17
+    commands:
+      - mvn versions:set -DnewVersion=${DRONE_TAG} -Dmaven.repo.local=./m2
+      - mvn versions:commit -Dmaven.repo.local=./m2
+    when:
+      event: tag
+
+  - name: build backend
+    image: maven:3.8-openjdk-17
+    commands:
+      - mvn clean install -Dmaven.repo.local=./m2
+
+  - name: rebuild-cache
+    image: drillster/drone-volume-cache
+    volumes:
+      - name: cache
+        path: /cache
+    settings:
+      rebuild: true
+      mount:
+        - ./m2
+        - ./src/main/web/node_modules
+
+
+  - name: publish new version
+    image: plugins/docker
+    settings:
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      tags:
+        - '${DRONE_COMMIT}'
+        - '${DRONE_TAG}'
+        - latest
+      repo: gonzague/now-playing
+      context: ./web
+      dockerfile: web/Dockerfile
+    when:
+      event: tag
+
+  - name: publish commit
+    image: plugins/docker
+    settings:
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      tags:
+        - '${DRONE_COMMIT}'
+      repo: gonzague/now-playing
+      context: ./web
+      dockerfile: web/Dockerfile
+    when:
+      event:
+        exclude:
+          - tag
+
+
+  - name: git hub release
+    image: plugins/github-release
+    settings:
+      api_key:
+        from_secret: github_token
+      files: target/now-playing-*.jar
+    when:
+      event: tag
+trigger:
+  event:
+    - push
+    - tag
+
+volumes:
+  - name: cache
+    host:
+      path: /home/core/cache
