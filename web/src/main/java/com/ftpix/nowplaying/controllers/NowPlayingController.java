@@ -1,10 +1,7 @@
 package com.ftpix.nowplaying.controllers;
 
 
-import com.ftpix.nowplaying.NowPlayingPlugin;
-import com.ftpix.nowplaying.Pair;
-import com.ftpix.nowplaying.Plugin;
-import com.ftpix.nowplaying.WebApp;
+import com.ftpix.nowplaying.*;
 import com.ftpix.nowplaying.activities.Activity;
 import com.ftpix.nowplaying.activities.MediaActivityPlugin;
 import com.ftpix.nowplaying.models.*;
@@ -75,7 +72,7 @@ public class NowPlayingController {
      * @return
      */
     @SparkGet("/now-playing.jpg")
-    public Object nowPlaying(@SparkQueryParam("width") Integer width, @SparkQueryParam("height") Integer height, @SparkQueryParam("scale") Double scale, @SparkQueryParam("rotate") String rotate, Response res, Request request) throws Exception {
+    public Object nowPlaying(@SparkQueryParam("width") Integer width, @SparkQueryParam("height") Integer height, @SparkQueryParam("scale") Double scale, @SparkQueryParam("rotate") String rotate, @SparkQueryParam("screen") String screenId, Response res, Request request) throws Exception {
         SERVER_REQUEST.set(request);
 
         Dimension dimension = FULL_HD;
@@ -86,7 +83,7 @@ public class NowPlayingController {
         scale = Optional.ofNullable(scale).orElse(1D);
         logger.info("Getting now playing for dimension:{} and scale {}", dimension, scale);
 
-        byte[] toUse = getContent(dimension, scale, rotate != null && rotate.trim().length() > 0 ? RotateImage.Direction.valueOf(rotate.toUpperCase()) : null);
+        byte[] toUse = getContent(dimension, scale, rotate != null && rotate.trim().length() > 0 ? RotateImage.Direction.valueOf(rotate.toUpperCase()) : null, screenId);
 
 
         res.raw().setContentType("application/octet-stream");
@@ -202,15 +199,25 @@ public class NowPlayingController {
     }
 
 
-    private byte[] getContent(Dimension dimension, double scale, RotateImage.Direction direction) throws Exception {
+    private byte[] getContent(Dimension dimension, double scale, RotateImage.Direction direction, String screenId) throws Exception {
 
 
         int scaledWidth = (int) ((double) dimension.width * scale);
         int scaledHeight = (int) ((double) dimension.height * scale);
+
         Dimension scaledDimension = new Dimension(scaledWidth, scaledHeight);
 
+        CustomScreen customScreen = null;
+        if (screenId != null
+                && screenId.length() > 0
+                && CONFIG.screens.containsKey(screenId)
+        ) {
+            customScreen = CONFIG.screens.get(screenId);
+            scaledDimension = new Dimension(customScreen.getWidth(), customScreen.getHeight());
+        }
 
         String cacheIndex = dimensionsToString(dimension, scale);
+        screenId = screenId == null ? null : screenId.trim();
 
         try {
 
@@ -219,7 +226,7 @@ public class NowPlayingController {
             Object nowPlayingContent = nowPlayingPlugin.getNowPlayingContent();
 
             //checking cache, if the object is equal we can skip the image creation
-            BufferedImage b = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_3BYTE_BGR);
+            BufferedImage b = new BufferedImage(scaledDimension.width, scaledDimension.height, BufferedImage.TYPE_3BYTE_BGR);
 //                BufferedImage b = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g = b.createGraphics();
             try {
@@ -232,8 +239,13 @@ public class NowPlayingController {
                 logger.info("Generating new image for plugin:[{}]", nowPlayingPlugin.getName());
 
                 long now = System.currentTimeMillis();
-                nowPlayingPlugin.getNowPlayingImage(nowPlayingContent, g, scaledDimension, scale);
 
+                if (customScreen != null && nowPlayingPlugin instanceof WithCustomScreen && CONFIG.screens.get(screenId).getPluginTemplates().containsKey(nowPlayingPlugin.getId())) {
+                    WithCustomScreen template = ((WithCustomScreen<?>) nowPlayingPlugin);
+                    template.getNowPlayingImageForScreen(nowPlayingContent, g, scaledDimension, CONFIG.screens.get(screenId).getPluginTemplates().get(nowPlayingPlugin.getId()));
+                } else {
+                    nowPlayingPlugin.getNowPlayingImage(nowPlayingContent, g, scaledDimension, scale);
+                }
 
                 logger.info("Plugin {} created image in {}ms", nowPlayingPlugin.getName(), System.currentTimeMillis() - now);
 

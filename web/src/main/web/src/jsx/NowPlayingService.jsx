@@ -17,6 +17,12 @@ export const API = {
     },
     SETTINGS: {
         SAVE: API_URL + "/settings/save",
+    },
+    SCREENS: {
+        ADD: API_URL + "/screens/add",
+        LIST: API_URL + "/screens",
+        GET_AVAILABLE_PLUGINS: API_URL + "/screens/available-plugins",
+        SAVE_VARIABLES: API_URL + "/screens/variables/{screenId}/{pluginId}"
     }
 };
 
@@ -29,8 +35,6 @@ class NowPlayingService {
     getAvailableActivityPlugins() {
         return fetch(API.ACTIVITIES.GET_AVAILABLE_PLUGINS).then(r => r.json());
     }
-
-
 
     /**
      * Saves the new activity plugin
@@ -51,7 +55,6 @@ class NowPlayingService {
     getActivitiesForPlugin(pluginId) {
         return fetch(API.ACTIVITIES.GET_ACTIVITIES + "/" + pluginId).then(r => r.json());
     }
-
 
     setMapping(activity, plugin) {
         return fetch(API.ACTIVITIES.SET_MAPPING, {
@@ -81,7 +84,6 @@ class NowPlayingService {
         return fetch(API.SETTINGS.SAVE, {method: 'post', body: new URLSearchParams(settings)}).then(r => r.json());
     }
 
-
     /**
      *  saves the flow of now playing
      */
@@ -99,8 +101,36 @@ class NowPlayingService {
      * GEts the current flow
      * @returns {Promise<any>}
      */
-    getFlow(){
+    getFlow() {
         return fetch(API.FLOW.GET_FLOW).then(r => r.json());
+    }
+
+    addScreen(screen) {
+        return fetch(API.SCREENS.ADD, {
+            method: 'post',
+            body: JSON.stringify(screen),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+    }
+
+    getScreens() {
+        return fetch(API.SCREENS.LIST).then(r => r.json());
+    }
+
+    getScreensPlugins() {
+        return fetch(API.SCREENS.GET_AVAILABLE_PLUGINS).then(r => r.json());
+    }
+
+    saveVariables(screenId, pluginId, variables) {
+        return fetch(API.SCREENS.SAVE_VARIABLES.replace("{screenId}", screenId).replace('{pluginId}', pluginId), {
+            method: 'post',
+            body: JSON.stringify(variables),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
     }
 
 }

@@ -16,6 +16,7 @@ public class Config {
 
     public Map<String, Map<String, String>> pluginSettings = new HashMap<>();
     public FlowNode flow;
+    public Map<String, CustomScreen> screens = new HashMap<>();
 
 
     public synchronized void save() throws IOException {

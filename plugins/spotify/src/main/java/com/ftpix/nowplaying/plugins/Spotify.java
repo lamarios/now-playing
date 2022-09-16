@@ -34,7 +34,11 @@ import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Spotify implements NowPlayingPlugin<SpotifyNowPlaying>, MediaActivityPlugin, ExternalLoginPlugin {
+public class Spotify implements NowPlayingPlugin<SpotifyNowPlaying>, MediaActivityPlugin, ExternalLoginPlugin, WithCustomScreen<SpotifyNowPlaying> {
+    public static final String IMAGE = "image";
+    public static final String SONG_NAME = "song.name";
+    public static final String ALBUM = "album";
+    public static final String ARTIST = "artist";
     private final Logger logger = LogManager.getLogger();
     private SpotifyToken token;
     public static final String SPOTIFY_API_TOKEN = "https://accounts.spotify.com/api/token";
@@ -55,27 +59,58 @@ public class Spotify implements NowPlayingPlugin<SpotifyNowPlaying>, MediaActivi
     }
 
     @Override
+    public void getNowPlayingImageForScreen(SpotifyNowPlaying nowPlaying, Graphics2D graphics, Dimension dimension, Map<String, TemplateVariable> variables) throws Exception {
+        if (nowPlaying != null && nowPlaying.is_playing) {
+            Pair<BufferedImage, BufferedImage> nowPlayingImage = getNowPlayingImage(nowPlaying);
+
+            BufferedImage albumArt = nowPlayingImage.getKey();
+            drawBackground(graphics, dimension, nowPlayingImage.getValue());
+            graphics.setColor(Color.WHITE);
+            variables.forEach((name, template) -> {
+                if (template.getWidth() > 0 && template.getHeight() > 0) {
+                    switch (name) {
+                        case IMAGE:
+                            try {
+                                DrawUtils.drawImage(albumArt, graphics, new Rectangle(template.getX(), template.getY(), template.getWidth(), template.getHeight()), true);
+                            } catch (Exception e) {
+                                logger.error("Couldn't draw image", e);
+                            }
+                            break;
+                        case ARTIST:
+                            String artists = nowPlaying.item.artists.stream().map(s -> s.name).collect(Collectors.joining(", "));
+                            DrawUtils.drawString(artists, graphics, new Rectangle(template.getX(), template.getY(), template.getWidth(), template.getHeight()));
+                            break;
+                        case ALBUM:
+                            DrawUtils.drawString(nowPlaying.item.album.name, graphics, new Rectangle(template.getX(), template.getY(), template.getWidth(), template.getHeight()));
+                            break;
+                        case SONG_NAME:
+                            DrawUtils.drawString(nowPlaying.item.name, graphics, new Rectangle(template.getX(), template.getY(), template.getWidth(), template.getHeight()));
+                            break;
+                    }
+                }
+            });
+        } else {
+            graphics.setColor(Color.BLACK);
+            graphics.fillRect(0, 0, dimension.width, dimension.height);
+
+            Dimension fiftyPercent = Utils.getPercentOf(dimension, 50);
+            int iconScale = Math.min(fiftyPercent.width, fiftyPercent.height);
+
+            graphics.translate(dimension.width / 2 - iconScale / 2, dimension.height / 2 - iconScale / 2);
+            graphics.scale(iconScale, iconScale);
+            Icon.paint(graphics);
+        }
+    }
+
+    @Override
     public void getNowPlayingImage(SpotifyNowPlaying nowPlaying, Graphics2D graphics, Dimension dimension, double scale) throws Exception {
         Dimension onePercent = new Dimension(dimension.width / 100, dimension.height / 100);
 
         if (nowPlaying != null && nowPlaying.is_playing) {
             Pair<BufferedImage, BufferedImage> nowPlayingImage = getNowPlayingImage(nowPlaying);
+
             BufferedImage albumArt = nowPlayingImage.getKey();
-            BufferedImage background = nowPlayingImage.getValue();
-
-            //black background
-            graphics.setColor(Color.black);
-            graphics.fillRect(0, 0, dimension.width, dimension.height);
-
-            //building the background image
-            int maxSize = Math.max(dimension.width, dimension.height);
-            background = Thumbnails.of(background).size(maxSize, maxSize).asBufferedImage();
-            graphics.drawImage(background, null, dimension.width / 2 - background.getWidth() / 2, dimension.height / 2 - background.getHeight() / 2);
-
-            //semi transparent layer
-            graphics.setColor(new Color(0, 0, 0, 0.5F));
-            graphics.fillRect(0, 0, dimension.width, dimension.height);
-
+            drawBackground(graphics, dimension, nowPlayingImage.getValue());
 
             //drawing art
             albumArt = Utils.makeRoundedCorner(Thumbnails.of(albumArt).size(dimension.height / 2, dimension.height / 2).asBufferedImage(), 20);
@@ -127,6 +162,22 @@ public class Spotify implements NowPlayingPlugin<SpotifyNowPlaying>, MediaActivi
 
     }
 
+    private void drawBackground(Graphics2D graphics, Dimension dimension, BufferedImage background) throws IOException {
+
+        //black background
+        graphics.setColor(Color.black);
+        graphics.fillRect(0, 0, dimension.width, dimension.height);
+
+        //building the background image
+        int maxSize = Math.max(dimension.width, dimension.height);
+        background = Thumbnails.of(background).size(maxSize, maxSize).asBufferedImage();
+        graphics.drawImage(background, null, dimension.width / 2 - background.getWidth() / 2, dimension.height / 2 - background.getHeight() / 2);
+
+        //semi transparent layer
+        graphics.setColor(new Color(0, 0, 0, 0.5F));
+        graphics.fillRect(0, 0, dimension.width, dimension.height);
+    }
+
     /**
      * Try to fit string in given width
      *
@@ -163,20 +214,14 @@ public class Spotify implements NowPlayingPlugin<SpotifyNowPlaying>, MediaActivi
     private Pair<BufferedImage, BufferedImage> getNowPlayingImage(SpotifyNowPlaying nowPlaying) throws IOException {
         //we need to download it
         logger.info("Downloading album art");
-        BufferedImage art = nowPlaying.item.album.images
-                .stream()
-                .sorted(Comparator.comparingInt((Image value) -> value.width).reversed())
-                .findFirst()
-                .map(i -> {
-                    try {
-                        return ImageIO.read(new URL(i.url));
-                    } catch (IOException e) {
-                        logger.error("Couldn't get image from Spotify");
-                        return null;
-                    }
-                })
-                .filter(i -> i != null)
-                .orElseThrow(() -> new IOException("This song doesn't have image"));
+        BufferedImage art = nowPlaying.item.album.images.stream().sorted(Comparator.comparingInt((Image value) -> value.width).reversed()).findFirst().map(i -> {
+            try {
+                return ImageIO.read(new URL(i.url));
+            } catch (IOException e) {
+                logger.error("Couldn't get image from Spotify");
+                return null;
+            }
+        }).filter(i -> i != null).orElseThrow(() -> new IOException("This song doesn't have image"));
 
         BufferedImage blurred = new BoxBlurFilter(100, 100, 1).filter(art, null);
 
@@ -350,10 +395,7 @@ public class Spotify implements NowPlayingPlugin<SpotifyNowPlaying>, MediaActivi
     private Optional<SpotifyToken> getToken(String code, String url) {
         try {
             logger.info("Getting token from code [{}] and state [{}]", code, url);
-            MultipartBody post = Unirest.post(SPOTIFY_API_TOKEN).header(HttpHeaders.AUTHORIZATION, "Basic " + getBase64Authorization())
-                    .field("grant_type", "authorization_code")
-                    .field("code", code)
-                    .field("redirect_uri", url);
+            MultipartBody post = Unirest.post(SPOTIFY_API_TOKEN).header(HttpHeaders.AUTHORIZATION, "Basic " + getBase64Authorization()).field("grant_type", "authorization_code").field("code", code).field("redirect_uri", url);
 
 
             String body = post.asString().getBody();
@@ -370,29 +412,25 @@ public class Spotify implements NowPlayingPlugin<SpotifyNowPlaying>, MediaActivi
      * Refreshes a token
      */
     private void refreshToken() {
-        Optional.ofNullable(token)
-                .map(t -> t.refresh_token)
-                .ifPresent(r -> {
-                    MultipartBody post = Unirest.post(SPOTIFY_API_TOKEN).header(HttpHeaders.AUTHORIZATION, "Basic " + getBase64Authorization())
-                            .field("grant_type", "refresh_token")
-                            .field("refresh_token", r);
+        Optional.ofNullable(token).map(t -> t.refresh_token).ifPresent(r -> {
+            MultipartBody post = Unirest.post(SPOTIFY_API_TOKEN).header(HttpHeaders.AUTHORIZATION, "Basic " + getBase64Authorization()).field("grant_type", "refresh_token").field("refresh_token", r);
 
 
-                    String body = null;
-                    try {
-                        body = post.asString().getBody();
-                        logger.info("Getting token response with body [{}]", body);
-                        Optional.ofNullable(gson.fromJson(body, SpotifyToken.class)).ifPresent(t -> {
-                            token.access_token = t.access_token;
-                            loggedIn = true;
-                            saveToken(token);
-
-                        });
-                    } catch (UnirestException e) {
-                        logger.error("couldn't get token via refresh token", e);
-                    }
+            String body = null;
+            try {
+                body = post.asString().getBody();
+                logger.info("Getting token response with body [{}]", body);
+                Optional.ofNullable(gson.fromJson(body, SpotifyToken.class)).ifPresent(t -> {
+                    token.access_token = t.access_token;
+                    loggedIn = true;
+                    saveToken(token);
 
                 });
+            } catch (UnirestException e) {
+                logger.error("couldn't get token via refresh token", e);
+            }
+
+        });
     }
 
     public String getBase64Authorization() {
@@ -433,9 +471,7 @@ public class Spotify implements NowPlayingPlugin<SpotifyNowPlaying>, MediaActivi
      */
     private SpotifyNowPlaying nowPlaying() throws UnirestException {
 
-        HttpResponse<String> stringHttpResponse = Unirest.get(SPOTIFY_CURRENTLY_PLAYING)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token.access_token)
-                .asString();
+        HttpResponse<String> stringHttpResponse = Unirest.get(SPOTIFY_CURRENTLY_PLAYING).header(HttpHeaders.AUTHORIZATION, "Bearer " + token.access_token).asString();
 
 //        stringHttpResponse.getHeaders().forEach((s, strings) -> logger.info("Spotify Header {} => {}", s, strings.stream().collect(Collectors.joining(","))));
 
@@ -465,4 +501,10 @@ public class Spotify implements NowPlayingPlugin<SpotifyNowPlaying>, MediaActivi
             return "<a  onClick=\"prompt('You need to set the spotifiy application callback URL as below'," + redirectUri + "); window.location.href=" + url + "; return false;\">login to Spotify</a>";
         }
     }
+
+    @Override
+    public List<String> getTemplateVariables() {
+        return List.of(ARTIST, ALBUM, SONG_NAME, IMAGE);
+    }
+
 }

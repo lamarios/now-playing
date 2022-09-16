@@ -1,9 +1,6 @@
 package com.ftpix.plugin.jellyfin;
 
-import com.ftpix.nowplaying.NowPlayingPlugin;
-import com.ftpix.nowplaying.Setting;
-import com.ftpix.nowplaying.SettingType;
-import com.ftpix.nowplaying.Utils;
+import com.ftpix.nowplaying.*;
 import com.ftpix.nowplaying.activities.Activity;
 import com.ftpix.nowplaying.activities.MediaActivityPlugin;
 import com.ftpix.plugin.jellyfin.model.JellyfinSession;
@@ -25,7 +22,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.List;
 
-public class Jellyfin implements NowPlayingPlugin<NowPlayingItem>, MediaActivityPlugin {
+public class Jellyfin implements NowPlayingPlugin<NowPlayingItem>, MediaActivityPlugin, WithCustomScreen<NowPlayingItem> {
 
 
     private final static String NOW_PLAYING_URL = "%sSessions?ActiveWithinSeconds=960&api_key=%s";
@@ -35,6 +32,11 @@ public class Jellyfin implements NowPlayingPlugin<NowPlayingItem>, MediaActivity
     public static final String SETTINGS_API_KEY = "apiKey";
     public static final String SETTINGS_URL = "url";
     public static final String SETTINGS_PREFERRED_PLAYER = "player";
+    public static final String MOVIE_NAME = "movie.name";
+    public static final String MOVIE_YEAR = "movie.year";
+    public static final String SERIES_NAME = "series.name";
+    public static final String SERIES_EPISODE_NAME = "series.episodeName";
+    public static final String IMAGE = "image";
 
     private String url;
     private String apiKey;
@@ -44,6 +46,61 @@ public class Jellyfin implements NowPlayingPlugin<NowPlayingItem>, MediaActivity
     @Override
     public NowPlayingItem getNowPlayingContent() throws Exception {
         return getNowPlaying();
+    }
+
+    @Override
+    public void getNowPlayingImageForScreen(NowPlayingItem video, Graphics2D graphics, Dimension dimension, Map<String, TemplateVariable> variables) throws Exception {
+        graphics.setColor(Color.BLACK);
+        graphics.fillRect(0, 0, dimension.width, dimension.height);
+
+        if (video != null) {
+            Map<String, BufferedImage> images = setArtAndThumbnail(video);
+            BufferedImage art = images.get("art");
+
+            if (art != null) {
+                BufferedImage background = Utils.cover(art, dimension);
+                graphics.drawImage(background, null, dimension.width / 2 - background.getWidth() / 2, dimension.height / 2 - background.getHeight() / 2);
+
+                graphics.setColor(new Color(0, 0, 0, 0.7F));
+                graphics.fillRect(0, 0, dimension.width, dimension.height);
+            }
+
+            // we have a series
+            graphics.setColor(Color.WHITE);
+            boolean isSeries = !Strings.isNullOrEmpty(video.getSeriesId());
+            variables.forEach((name, template) -> {
+                if (template.getWidth() > 0 && template.getHeight() > 0) {
+                    switch (name) {
+                        case IMAGE:
+                            try {
+                                BufferedImage thumb = images.get("thumb");
+                                DrawUtils.drawImage(thumb, graphics, new Rectangle(template.getX(), template.getY(), template.getWidth(), template.getHeight()), true);
+                            } catch (Exception e) {
+                                logger.error("Couldn't draw image", e);
+                            }
+                            break;
+                        case SERIES_NAME:
+                            if (isSeries)
+                                DrawUtils.drawString(video.getSeriesName(), graphics, new Rectangle(template.getX(), template.getY(), template.getWidth(), template.getHeight()));
+                            break;
+                        case SERIES_EPISODE_NAME:
+                            if (isSeries)
+                                DrawUtils.drawString(video.getName(), graphics, new Rectangle(template.getX(), template.getY(), template.getWidth(), template.getHeight()));
+                            break;
+                        case MOVIE_NAME:
+                            if (!isSeries)
+                                DrawUtils.drawString(video.getName(), graphics, new Rectangle(template.getX(), template.getY(), template.getWidth(), template.getHeight()));
+                            break;
+                        case MOVIE_YEAR:
+                            if (!isSeries)
+                                DrawUtils.drawString(Integer.toString(video.getProductionYear()), graphics, new Rectangle(template.getX(), template.getY(), template.getWidth(), template.getHeight()));
+                            break;
+                    }
+                }
+            });
+
+
+        }
     }
 
     @Override
@@ -288,7 +345,7 @@ public class Jellyfin implements NowPlayingPlugin<NowPlayingItem>, MediaActivity
     }
 
     /**
-     * Generates the thumbnail and art depending of availability;
+     * Generates the thumbnail and art depending on availability;
      * do not download and generate if playing is still the same
      *
      * @param video
@@ -544,4 +601,10 @@ public class Jellyfin implements NowPlayingPlugin<NowPlayingItem>, MediaActivity
 
         return notPlaying;
     }
+
+    @Override
+    public List<String> getTemplateVariables() {
+        return List.of(MOVIE_NAME, MOVIE_YEAR, SERIES_NAME, SERIES_EPISODE_NAME, IMAGE);
+    }
+
 }

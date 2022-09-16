@@ -2,10 +2,11 @@ package com.ftpix.nowplaying.transformers;
 
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import spark.ResponseTransformer;
 
 public class GsonTransformer implements ResponseTransformer {
-    public static final Gson GSON = new Gson();
+    public static final Gson GSON = new GsonBuilder().enableComplexMapKeySerialization().create();
 
 
     @Override
